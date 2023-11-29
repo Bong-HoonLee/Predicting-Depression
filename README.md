@@ -3,7 +3,7 @@
 ### Logical Flow
 
 
-![pytorch-learning-logical-flow](data/pytorch_learning_logical_flow.png)
+![pytorch-learning-logical-flow](doc/pytorch_learning_logical_flow.png)
 
 ### Pseudo Code
 ```
@@ -88,8 +88,8 @@
 
 ## Pytorch 모델 추론 과정
 
-![pytorch-inference-logical-flow](data/pytorch_inference_logical_flow.png)
+![pytorch-inference-logical-flow](doc/pytorch_inference_logical_flow.png)
 
 -------
 
-![team4_project_01_flow](data/team4_project_01_flow.png)
+![team4_project_01_flow](doc/team4_project_01_flow.png)
