@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+import os
+import sys
+import argparse
+
+# 파이썬 실행 시, 프로젝트 디렉토리들을 sys.path에 추가
+src_path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir))
+sys.path.append(src_path)
+
+dir_list = os.listdir(src_path)
+for item in dir_list:
+    path = src_path + "/" + item
+    if not os.path.isdir(path):
+        continue
+    if item.startswith("."):
+        continue
+    if path in sys.path:
+        continue
+    sys.path.append(path)
+
+
+# args 파싱
+parser = argparse.ArgumentParser(description="I am trainer!! ha-ha-ha", add_help=True)
+parser.add_argument("--user", default="estsoft", type=str, help="home user name")
+parser.add_argument("--mode", default="train", type=str, help="train or test")
+parser.add_argument("--device", default="auto", type=str, help="cpu or gpu")
+parser.add_argument("--model", default="ANN", type=str, help="supported model name")
+parser.add_argument("--model-config-file", type=str, help="model's config file")
+parser.add_argument("--model-output-dir", default="model/ann", type=str, help="supported model name")
+parser.add_argument("--train-data-file", type=str, help="train data file")
+args = parser.parse_args()
+
+#TODO logging
+if args.device == "auto":
+    import torch
+    args.device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
+
+try:
+    from lib.trainer import Trainer
+
+    trainer = Trainer(args)
+    if args.mode == "train":
+        trainer.fit(kfold_n_splits=5)
+    elif args.mode == "test":
+        trainer.test()
+    else:
+        raise ValueError("mode must be train or test")
+except Exception as e:
+    print(e)
+    #TODO logging
+    raise e

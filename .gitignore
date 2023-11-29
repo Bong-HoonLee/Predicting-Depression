@@ -1,3 +1,11 @@
+# Custom
+.vscode
+.idea
+data/
+output/
+*.csv
+*.xlsx
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
