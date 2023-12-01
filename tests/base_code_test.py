@@ -30,7 +30,7 @@ for item in dir_list:
         continue
     sys.path.append(path)
 
-from lib.models.ann import ANN
+from models.ann import ANN
 
 # 하이퍼 파라미터
 N_SPLITS = 5
