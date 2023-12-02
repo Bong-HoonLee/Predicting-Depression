@@ -3,15 +3,14 @@ import importlib
 import pandas as pd
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
-from models.modelable import Modelable
+import torch.nn as nn
+import torchmetrics
 
 from datetime import datetime
-
 from tqdm.auto import trange
 from sklearn.model_selection import KFold
-from torch.utils.data import TensorDataset, DataLoader
-from tqdm.auto import tqdm
+from torch.utils.data import TensorDataset
+from torch.utils.data import DataLoader
 
 class Trainer():
     def __init__(self, data_dir: str, config_dir: str) -> None:
@@ -60,14 +59,14 @@ class Trainer():
             dataset = TensorDataset(train_X, train_y)
             dataloader = DataLoader(dataset, **data_loader_params)
 
-            model: Modelable = model_class(**model_params).to(device)
+            model = model_class(**model_params).to(device)
             loss = hyperparameters['loss']
             optimizer = optim(model.parameters(), **optim_params)
 
             values = []
             pbar = trange(epochs)
             for _ in pbar:
-                model.training_step(dataloader=dataloader, loss_function=loss, optimizer=optimizer, device=device, metric=metric)
+                self.training_step(model=model, dataloader=dataloader, loss_function=loss, optimizer=optimizer, device=device, metric=metric)
                 values.append(metric.compute().item())
                 metric.reset()
                 pbar.set_postfix(trn_loss=values[-1])
@@ -96,11 +95,10 @@ class Trainer():
             n_split = hyperparameters['cv_params']['n_split']
             data_loader_params = hyperparameters['data_loader_params']
 
-            model: Modelable = model_class(**model_params).to(device)
+            model = model_class(**model_params).to(device)
             models = [model_class(**model_params).to(device) for _ in range(n_split)]
             for i, _ in enumerate(models):
-                m: Modelable = models[i]
-                m.load_state_dict(model.state_dict())
+                models[i].load_state_dict(model.state_dict())
 
             kfold = KFold(n_splits=n_split, shuffle=False)
             metrics = {'trn_rmse': [], 'val_rmse': []}
@@ -115,16 +113,15 @@ class Trainer():
                 dl_trn = DataLoader(ds_trn, **data_loader_params)
                 dl_val = DataLoader(ds_val, **data_loader_params)
 
-                m = models[i]
                 loss = hyperparameters['loss']
-                optimizer = optim(m.parameters(), **optim_params)
+                optimizer = optim(models[i].parameters(), **optim_params)
 
                 pbar = trange(epochs)
                 for _ in pbar:
-                    m.training_step(dataloader=dl_trn ,loss_function=loss, optimizer=optimizer, device=device, metric=metric)
+                    self.training_step(model=models[i], dataloader=dl_trn ,loss_function=loss, optimizer=optimizer, device=device, metric=metric)
                     trn_rmse = metric.compute().item()
                     metric.reset()
-                    m.validation_step(dataloader=dl_val, metric=metric, device=device)
+                    self.validation_step(model=models[i], dataloader=dl_val, metric=metric, device=device)
                     val_rmse = metric.compute().item()
                     metric.reset()
                     pbar.set_postfix(trn_rmse=trn_rmse, val_loss=val_rmse)
@@ -140,4 +137,27 @@ class Trainer():
 
     def test(self):
         # self.model.test()
+        pass
+
+
+    def training_step(self, model: nn.Module, dataloader: DataLoader, loss_function, optimizer: torch.optim.Optimizer, device, metric: torchmetrics.metric.Metric) -> float:
+        model.train()
+        for X, y in dataloader:
+            X, y = X.to(device), y.to(device)
+            y_hat = model.forward(X)
+            loss = loss_function(y_hat, y)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            metric.update(y_hat, y)
+
+    def validation_step(self, model: nn.Module, dataloader: DataLoader, device, metric: torchmetrics.metric.Metric):
+        model.eval()
+        with torch.inference_mode():
+            for X, y in dataloader:
+                X, y = X.to(device), y.to(device)
+                y_hat = model.forward(X)
+                metric.update(y_hat, y)
+
+    def test_step(self, model: nn.Module, dataloader: DataLoader):
         pass
