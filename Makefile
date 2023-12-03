@@ -1,9 +1,17 @@
 
 update: 
+	git reset --hard
 	git pull
 
 
-training-data-load-to-server:
+train-test:
+	$(shell pwd)/bin/train --mode=train --config-dir=config/samples/20231201
+
+validate-test:
+	$(shell pwd)/bin/train --mode=validate --config-dir=config/samples/20231201
+
+
+data-dir-load-to-server:
 	scp -r $(shell pwd)/data/* estsoft@45.32.129.17:~/data
 
 
