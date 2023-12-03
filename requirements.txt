@@ -16,12 +16,12 @@ numpy==1.26.2
 ply==3.11
 PyQt5==5.15.10
 pyreadstat==1.2.5
-sklearn==0.0.post11
+scikit-learn==1.2.2
 sympy==1.12
-torch==2.2.0.dev20231116
-torchaudio==2.2.0.dev20231116
+torch==2.1.1
+torchaudio==2.1.1
 torchmetrics==1.2.0
-torchvision==0.17.0.dev20231116
+torchvision==0.16.1
 tqdm==4.66.1
 webencodings==0.5.1
 yarl==1.9.2
