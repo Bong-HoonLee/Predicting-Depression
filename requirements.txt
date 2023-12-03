@@ -25,3 +25,4 @@ torchvision==0.16.1
 tqdm==4.66.1
 webencodings==0.5.1
 yarl==1.9.2
+redis==5.0.1
