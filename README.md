@@ -92,4 +92,68 @@
 
 -------
 
+## 프로그램 도식
+
 ![team4_project_01_flow](doc/team4_project_01_flow.png)
+
+--------
+
+## launch.json 
+
+1. 프로젝트 최상위 디렉토리에서 .vscode 폴더 생성
+2. .vscode 폴더 안에 launch.json 파일 생성
+3. 샘플 코드 붙여넣기
+```
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: train",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/train",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--mode=train",
+                "--config-dir=config/samples/20231201",
+            ]
+        },
+        {
+            "name": "Python: validate",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/train",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--mode=validate",
+                "--config-dir=config/samples/20231201",
+            ]
+        },
+        {
+            "name": "Python: sample",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/train",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--mode=validate",
+                "--config-dir=config/samples/house",
+            ]
+        }
+    ]
+}
+```

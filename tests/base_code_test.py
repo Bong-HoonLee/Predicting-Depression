@@ -48,22 +48,18 @@ device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is
 
 # 데이터 준비 & 전처리
 root_dir = os.getcwd()
-train_df = pd.read_csv(f"{root_dir}/data/train.csv")
-train_df['Sex'] = train_df['Sex'].map({'female': 0, 'male': 1})
+train_df = pd.read_csv(f"{root_dir}/tests/training_data_202311291425.csv")
 
-test_df = pd.read_csv(f"{root_dir}/data/test.csv")
-test_df['Sex'] = test_df['Sex'].map({'female': 0, 'male': 1})
+train_df_without_y = train_df.drop(columns=["DF2_pr"])
 
-X_train = pd.get_dummies(train_df[["Pclass", "Sex", "SibSp", "Parch"]]).to_numpy(dtype=np.float32)
-y_train = train_df[["Survived"]].to_numpy(dtype=np.float32)
-
-X_test = test_df[["Pclass", "Sex", "SibSp", "Parch"]]
+X_train = pd.get_dummies(train_df_without_y).to_numpy(dtype=np.float32)
+y_train = train_df[["DF2_pr"]].to_numpy(dtype=np.float32)
 
 
 # 모델, 손실함수, 옵티마이저 준비
 nets = [
         ANN(
-            perceptron=(4, 128, 1), 
+            perceptron=(284, 512, 1), 
             optim=torch.optim.Adam, 
             loss_function=F.binary_cross_entropy,
             dropout=DROP_OUT,
