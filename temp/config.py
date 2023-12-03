@@ -6,10 +6,10 @@ from nn import ANN
 config = {
 
   'files': {
-    'X_csv': './data/trn_X.csv',
-    'y_csv': './data/trn_y.csv',
+    'X_csv': './trn_X.csv',
+    'y_csv': './trn_y.csv',
     'output': './model.pth',
-    'output_csv': './results/five_fold.csv',
+    'output_csv': './five_fold.csv',
   },
 
   'model': ANN,
