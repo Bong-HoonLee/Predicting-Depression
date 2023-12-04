@@ -122,7 +122,7 @@
             "name": "Python: train",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/train",
+            "program": "${workspaceFolder}${pathSeparator}bin${pathSeparator}train",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -134,7 +134,7 @@
             "name": "Python: validate",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/train",
+            "program": "${workspaceFolder}${pathSeparator}bin${pathSeparator}train",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -146,7 +146,7 @@
             "name": "Python: sample",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/train",
+            "program": "${workspaceFolder}${pathSeparator}bin${pathSeparator}train",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
