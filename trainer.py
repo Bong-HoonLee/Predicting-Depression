@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import torchmetrics
 
+from collections import defaultdict
 from datetime import datetime
 from tqdm.auto import trange
 from sklearn.model_selection import KFold
@@ -36,7 +37,6 @@ class Trainer():
             self.config_modules.append(module)
         
 
-
     def fit(self):
         for config in self.configs:
             model = config['model']
@@ -53,29 +53,29 @@ class Trainer():
             epochs = hyperparameters['epochs']
             optim = hyperparameters['optim']
             optim_params = hyperparameters['optim_params']
-            metrics = hyperparameters['metrics']
-            metrics = {key: metric for key, metric in metrics.items() if key == 'trn_loss'} #trn_loss만 사용
-            metrics = {key: metric.to(device) for key, metric in metrics.items()}
+            # total loss 로 대체함
+            metrics = {}
+            # metrics = hyperparameters['metrics']
+            # metrics = {key: metric for key, metric in metrics.items() if key == 'trn_loss'} #trn_loss만 사용
+            # metrics = {key: metric.to(device) for key, metric in metrics.items()}
 
             data_loader_params = hyperparameters['data_loader_params']
             dataset = TensorDataset(train_X, train_y)
             dataloader = DataLoader(dataset, **data_loader_params)
 
             model = model_class(**model_params).to(device)
-            loss = hyperparameters['loss']
+            loss_func = hyperparameters['loss']
             optimizer = optim(model.parameters(), **optim_params)
 
-            values = {}
+            values = defaultdict(list)
             pbar = trange(epochs)
             for _ in pbar:
-                self.training_step(model=model, dataloader=dataloader, loss_function=loss, optimizer=optimizer, device=device, metrics=metrics)
+                loss = self.training_step(model=model, dataloader=dataloader, loss_function=loss_func, optimizer=optimizer, device=device, metrics=metrics)
                 for key, metric in metrics.items():
-                    if key not in values:
-                        values[key] = []
                     values[key].append(metric.compute().item())
                     metric.reset()
-                postfix_values = {key: value[-1] for key, value in values.items()}
-                pbar.set_postfix(postfix_values)
+                # postfix_values = {key: value[-1] for key, value in values.items()}
+                pbar.set_postfix(trn_loss=loss)
 
             file_name = config["name"] + "_" + datetime.now().strftime("%Y%m%d%H%M") + ".pth"
             torch.save(model.state_dict(), f"{output_dir}/{file_name}")
@@ -83,6 +83,7 @@ class Trainer():
 
     def validate(self):
         for config in self.configs:
+            config_name = config['name']
             model = config['model']
             model_class = model['class']
             model_params = model['params']
@@ -109,8 +110,8 @@ class Trainer():
                 models[i].load_state_dict(model.state_dict())
 
             kfold = KFold(n_splits=n_split, shuffle=False)
-            trn_values = {}
-            val_values = {}
+            trn_values = defaultdict(list)
+            val_values = defaultdict(list)
             history = []
 
             for i, (trn_idx, val_idx) in enumerate(kfold.split(train_X)):
@@ -123,23 +124,19 @@ class Trainer():
                 dl_trn = DataLoader(ds_trn, **data_loader_params)
                 dl_val = DataLoader(ds_val, **data_loader_params)
 
-                loss = hyperparameters['loss']
+                loss_func = hyperparameters['loss']
                 optimizer = optim(models[i].parameters(), **optim_params)
 
                 pbar = trange(epochs)
                 for _ in pbar:
-                    self.training_step(model=models[i], dataloader=dl_trn ,loss_function=loss, optimizer=optimizer, device=device, metrics=metrics)
+                    _ = self.training_step(model=models[i], dataloader=dl_trn ,loss_function=loss_func, optimizer=optimizer, device=device, metrics=metrics)
                     for key, metric in metrics.items():
-                        if key not in trn_values:
-                            trn_values[key] = []
                         trn_values[key].append(metric.compute().item())
                         metric.reset()
                     postfix_values1 = {f"trn_{key}": value[-1] for key, value in trn_values.items()}
                     
                     self.validation_step(model=models[i], dataloader=dl_val, metrics=metrics, device=device)
                     for key, metric in metrics.items():
-                        if key not in val_values:
-                            val_values[key] = []
                         val_values[key].append(metric.compute().item())
                         metric.reset()
                     postfix_values2 = {f"val_{key}": value[-1] for key, value in val_values.items()}
@@ -147,12 +144,63 @@ class Trainer():
                     pbar.set_postfix({**postfix_values1, **postfix_values2})
                 history.append({**postfix_values1, **postfix_values2})
 
+            #logging
             df_metrics = pd.DataFrame(history)
-            df_metrics = pd.concat([df_metrics, df_metrics.apply(['mean', 'std'])])
             print(df_metrics)
 
-            file_name = config["name"] + "_validation_" + datetime.now().strftime("%Y%m%d%H%M") + ".csv"
+            output_dir += "/validation"
+            output_dir = output_dir.replace("//", "/")
+            datetime_str = datetime.now().strftime("%Y%m%d%H%M%S")
+            file_name = f"{config_name}_{datetime_str}.csv"
             df_metrics.to_csv(f"{output_dir}/{file_name}", index=False)
+
+            file_name = output_dir + '/' + data['train_X']['path'].split('/')[-1]
+            if os.path.exists(file_name):
+                df_meta = pd.read_csv(file_name)
+            else:
+                df_meta = pd.DataFrame(columns=[
+                        'datetime',
+                        'config_name', 
+                        'model_name', 
+                        'model_params', 
+                        'loss', 
+                        'optim', 
+                        'lr', 
+                        'metrics', 
+                        'cv_n_split', 
+                        'epochs', 
+                        'trn_loss_mean', 
+                        'trn_loss_std', 
+                        'val_loss_mean', 
+                        'val_loss_std'
+                    ])
+            df_meta = pd.concat([df_meta, pd.DataFrame([{
+                'datetime': datetime_str,
+                'config_name': config_name,
+                'model_name': model_class.__name__,
+                'model_params': self._convert_all_values_to_str(model_params),
+                'loss': hyperparameters['loss'].__name__,
+                'optim': optim.__name__,
+                'lr': optim_params['lr'],
+                'metrics': ",".join([key for key in metrics.keys()]),
+                'cv_n_split': n_split,
+                'epochs': epochs,
+                'trn_loss_mean': df_metrics['trn_loss'].mean(),
+                'trn_loss_std': df_metrics['trn_loss'].std(),
+                'val_loss_mean': df_metrics['val_loss'].mean(),
+                'val_loss_std': df_metrics['val_loss'].std()
+            }])])
+            df_meta.to_csv(file_name, index=False)
+
+
+    def _convert_all_values_to_str(self, obj):
+        if isinstance(obj, dict):
+            return {k: self._convert_all_values_to_str(v) for k, v in obj.items()}
+        elif isinstance(obj, list) or isinstance(obj, tuple):
+            return [self._convert_all_values_to_str(elem) for elem in obj]
+        else:
+            return getattr(obj, '__name__', str(obj))
+
 
     def test(self):
         # self.model.test()
@@ -166,6 +214,7 @@ class Trainer():
 
     def training_step(self, model: nn.Module, dataloader: DataLoader, loss_function, optimizer: torch.optim.Optimizer, device, metrics: dict[str, torchmetrics.metric.Metric]) -> float:
         model.train()
+        total_loss = 0.
         for X, y in dataloader:
             X, y = X.to(device), y.to(device)
             y_hat = model.forward(X)
@@ -173,8 +222,10 @@ class Trainer():
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            for metric in metrics.values():
+            total_loss += loss.item() * len(y)
+            for _, metric in metrics.items():
                 metric.update(y_hat, y)
+        return total_loss/len(dataloader.dataset)
 
     def validation_step(self, model: nn.Module, dataloader: DataLoader, device, metrics: dict[str, torchmetrics.metric.Metric]):
         model.eval()
@@ -182,7 +233,7 @@ class Trainer():
             for X, y in dataloader:
                 X, y = X.to(device), y.to(device)
                 y_hat = model.forward(X)
-                for metric in metrics.values():
+                for _, metric in metrics.items():
                     metric.update(y_hat, y)
 
     def test_step(self, model: nn.Module, dataloader: DataLoader):

@@ -1,8 +1,5 @@
 import torch
-
-
 import torch.nn as nn
-
 
 class ANN(nn.Module):
     def __init__(

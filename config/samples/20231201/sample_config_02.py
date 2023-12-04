@@ -50,7 +50,7 @@ config = {
             'recall' : BinaryRecall(),
             'f1score' : BinaryF1Score(),
             'auroc' : BinaryAUROC(),
-            'trn_loss': torchmetrics.MeanSquaredError(squared=False)
+            'loss': torchmetrics.MeanSquaredError(squared=False)
         },
         "device": "cuda"
         if torch.cuda.is_available()
