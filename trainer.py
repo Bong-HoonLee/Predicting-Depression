@@ -23,9 +23,9 @@ class Trainer():
         self.configs = [module.config for module in self.config_modules]
         self._history = []
 
+
     def load_module_from_path(self):
         config_files = os.listdir(self.config_dir)
-
         for config_file in config_files:
             config_file = os.path.join(self.config_dir, config_file)
             module_name = os.path.splitext(os.path.basename(config_file))[0]
@@ -36,6 +36,7 @@ class Trainer():
             spec.loader.exec_module(module)
             self.config_modules.append(module)
         
+
 
     def fit(self):
         for config in self.configs:
@@ -73,6 +74,8 @@ class Trainer():
 
             file_name = config["name"] + "_" + datetime.now().strftime("%Y%m%d%H%M") + ".pth"
             torch.save(model.state_dict(), f"{output_dir}/{file_name}")
+
+
 
     def validate(self):
         for config in self.configs:
@@ -137,6 +140,11 @@ class Trainer():
 
     def test(self):
         # self.model.test()
+
+        #TODO testset
+        #TODO testset 고르게 추출. 나이 분포, 성별 분포 고려해서 분리. PHQ 점수 분포도 잘 맞추는지 테스트 필요(고르게 추출).
+
+        
         pass
 
 

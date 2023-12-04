@@ -12,7 +12,7 @@ validate-test:
 
 
 data-dir-load-to-server:
-	scp -r $(shell pwd)/data/* estsoft@45.32.129.17:~/data
+	scp -r $(shell pwd)/data/* estsoft@45.32.129.17:/data
 
 
 require-redis: 
