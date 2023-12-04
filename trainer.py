@@ -21,7 +21,6 @@ class Trainer():
         self.load_module_from_path()
 
         self.configs = [module.config for module in self.config_modules]
-        self._history = []
 
 
     def load_module_from_path(self):
@@ -54,7 +53,9 @@ class Trainer():
             epochs = hyperparameters['epochs']
             optim = hyperparameters['optim']
             optim_params = hyperparameters['optim_params']
-            metric = hyperparameters['metric'].to(device)
+            metrics = hyperparameters['metrics']
+            metrics = {key: metric for key, metric in metrics.items() if key == 'trn_loss'} #trn_loss만 사용
+            metrics = {key: metric.to(device) for key, metric in metrics.items()}
 
             data_loader_params = hyperparameters['data_loader_params']
             dataset = TensorDataset(train_X, train_y)
@@ -64,17 +65,20 @@ class Trainer():
             loss = hyperparameters['loss']
             optimizer = optim(model.parameters(), **optim_params)
 
-            values = []
+            values = {}
             pbar = trange(epochs)
             for _ in pbar:
-                self.training_step(model=model, dataloader=dataloader, loss_function=loss, optimizer=optimizer, device=device, metric=metric)
-                values.append(metric.compute().item())
-                metric.reset()
-                pbar.set_postfix(trn_loss=values[-1])
+                self.training_step(model=model, dataloader=dataloader, loss_function=loss, optimizer=optimizer, device=device, metrics=metrics)
+                for key, metric in metrics.items():
+                    if key not in values:
+                        values[key] = []
+                    values[key].append(metric.compute().item())
+                    metric.reset()
+                postfix_values = {key: value[-1] for key, value in values.items()}
+                pbar.set_postfix(postfix_values)
 
             file_name = config["name"] + "_" + datetime.now().strftime("%Y%m%d%H%M") + ".pth"
             torch.save(model.state_dict(), f"{output_dir}/{file_name}")
-
 
 
     def validate(self):
@@ -93,7 +97,8 @@ class Trainer():
             epochs = hyperparameters['epochs']
             optim = hyperparameters['optim']
             optim_params = hyperparameters['optim_params']
-            metric = hyperparameters['metric'].to(device)
+            metrics = hyperparameters['metrics']
+            metrics = {key: metric.to(device) for key, metric in metrics.items()}
 
             n_split = hyperparameters['cv_params']['n_split']
             data_loader_params = hyperparameters['data_loader_params']
@@ -104,7 +109,9 @@ class Trainer():
                 models[i].load_state_dict(model.state_dict())
 
             kfold = KFold(n_splits=n_split, shuffle=False)
-            metrics = {'trn_rmse': [], 'val_rmse': []}
+            trn_values = {}
+            val_values = {}
+            history = []
 
             for i, (trn_idx, val_idx) in enumerate(kfold.split(train_X)):
                 X_trn, y_trn = train_X[trn_idx], train_y[trn_idx]
@@ -121,17 +128,26 @@ class Trainer():
 
                 pbar = trange(epochs)
                 for _ in pbar:
-                    self.training_step(model=models[i], dataloader=dl_trn ,loss_function=loss, optimizer=optimizer, device=device, metric=metric)
-                    trn_rmse = metric.compute().item()
-                    metric.reset()
-                    self.validation_step(model=models[i], dataloader=dl_val, metric=metric, device=device)
-                    val_rmse = metric.compute().item()
-                    metric.reset()
-                    pbar.set_postfix(trn_rmse=trn_rmse, val_loss=val_rmse)
-                metrics['trn_rmse'].append(trn_rmse)
-                metrics['val_rmse'].append(val_rmse)
-        
-            df_metrics = pd.DataFrame(metrics)
+                    self.training_step(model=models[i], dataloader=dl_trn ,loss_function=loss, optimizer=optimizer, device=device, metrics=metrics)
+                    for key, metric in metrics.items():
+                        if key not in trn_values:
+                            trn_values[key] = []
+                        trn_values[key].append(metric.compute().item())
+                        metric.reset()
+                    postfix_values1 = {f"trn_{key}": value[-1] for key, value in trn_values.items()}
+                    
+                    self.validation_step(model=models[i], dataloader=dl_val, metrics=metrics, device=device)
+                    for key, metric in metrics.items():
+                        if key not in val_values:
+                            val_values[key] = []
+                        val_values[key].append(metric.compute().item())
+                        metric.reset()
+                    postfix_values2 = {f"val_{key}": value[-1] for key, value in val_values.items()}
+
+                    pbar.set_postfix({**postfix_values1, **postfix_values2})
+                history.append({**postfix_values1, **postfix_values2})
+
+            df_metrics = pd.DataFrame(history)
             df_metrics = pd.concat([df_metrics, df_metrics.apply(['mean', 'std'])])
             print(df_metrics)
 
@@ -148,7 +164,7 @@ class Trainer():
         pass
 
 
-    def training_step(self, model: nn.Module, dataloader: DataLoader, loss_function, optimizer: torch.optim.Optimizer, device, metric: torchmetrics.metric.Metric) -> float:
+    def training_step(self, model: nn.Module, dataloader: DataLoader, loss_function, optimizer: torch.optim.Optimizer, device, metrics: dict[str, torchmetrics.metric.Metric]) -> float:
         model.train()
         for X, y in dataloader:
             X, y = X.to(device), y.to(device)
@@ -157,15 +173,17 @@ class Trainer():
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            metric.update(y_hat, y)
+            for metric in metrics.values():
+                metric.update(y_hat, y)
 
-    def validation_step(self, model: nn.Module, dataloader: DataLoader, device, metric: torchmetrics.metric.Metric):
+    def validation_step(self, model: nn.Module, dataloader: DataLoader, device, metrics: dict[str, torchmetrics.metric.Metric]):
         model.eval()
         with torch.inference_mode():
             for X, y in dataloader:
                 X, y = X.to(device), y.to(device)
                 y_hat = model.forward(X)
-                metric.update(y_hat, y)
+                for metric in metrics.values():
+                    metric.update(y_hat, y)
 
     def test_step(self, model: nn.Module, dataloader: DataLoader):
         pass

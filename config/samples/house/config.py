@@ -1,6 +1,8 @@
 import torch
 import torch.nn.functional as F
 import torchmetrics
+
+from torchmetrics.classification import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinaryAUROC
 from models.ann import ANN
 
 config = {
@@ -42,7 +44,14 @@ config = {
         "optim_params": {
             "lr": 0.01,
         },
-        "metric": torchmetrics.MeanSquaredError(squared=False),
+        "metrics": {
+            'accuracy': BinaryAccuracy(),
+            'precision' : BinaryPrecision(),
+            'recall' : BinaryRecall(),
+            'f1score' : BinaryF1Score(),
+            'auroc' : BinaryAUROC(),
+            'trn_loss': torchmetrics.MeanSquaredError(squared=False)
+        },
         "device": "cuda"
         if torch.cuda.is_available()
         else "cpu",
