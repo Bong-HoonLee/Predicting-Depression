@@ -23,8 +23,8 @@ for item in dir_list:
 parser = argparse.ArgumentParser(description="I am trainer!! ha-ha-ha", add_help=True)
 parser.add_argument("--user", default="estsoft", type=str, help="home user name")
 parser.add_argument("--mode", default="train", type=str, help="train or test")
-parser.add_argument("--data-dir", default="data", type=str, help="cpu or gpu")
-parser.add_argument("--config-dir", default="config/samples/20231201", type=str, help="cpu or gpu")
+parser.add_argument("--data-dir", default="data", type=str, help="data directory path")
+parser.add_argument("--config-dir", default="config/samples/20231201", type=str, help="config directory path")
 args = parser.parse_args()
 
 try:
