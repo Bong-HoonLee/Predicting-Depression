@@ -12,7 +12,8 @@ class ANN(nn.Module):
 
         input, hidden, output = perceptron
         self.lin1 = nn.Linear(input, hidden)
-        self.lin2 = nn.Linear(hidden, output)
+        self.lin2 = nn.Linear(hidden, hidden)
+        self.lin3 = nn.Linear(hidden, output)
         self.dropout = nn.Dropout(dropout)
         self.activation = activation
         
@@ -20,7 +21,8 @@ class ANN(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.lin1(x)
-        x = self.activation(x)
         x = self.dropout(x)
         x = self.lin2(x)
+        x = self.lin3(x)
+        x = self.activation(x)
         return x

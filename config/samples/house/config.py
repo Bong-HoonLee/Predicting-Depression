@@ -45,12 +45,12 @@ config = {
             "lr": 0.01,
         },
         "metrics": {
-            'accuracy': BinaryAccuracy(),
-            'precision' : BinaryPrecision(),
-            'recall' : BinaryRecall(),
-            'f1score' : BinaryF1Score(),
-            'auroc' : BinaryAUROC(),
-            'loss': torchmetrics.MeanSquaredError(squared=False)
+            # 'accuracy': BinaryAccuracy(),
+            # 'precision' : BinaryPrecision(),
+            # 'recall' : BinaryRecall(),
+            # 'f1score' : BinaryF1Score(),
+            # 'auroc' : BinaryAUROC(),
+            # 'loss': torchmetrics.MeanSquaredError(squared=False)
         },
         "device": "cuda"
         if torch.cuda.is_available()
