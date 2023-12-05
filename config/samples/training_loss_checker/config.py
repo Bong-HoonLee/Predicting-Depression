@@ -3,12 +3,12 @@ import torch
 import torch.nn as nn
 
 from torchmetrics.classification import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinaryAUROC
-from models.simpleClassifier import SimpleClassifier
+from models.ann import ANN
 
 config = {
     "name": "training_loss_checker",
     "model": {
-        "class": SimpleClassifier,
+        "class": ANN,
         "params": {},
     },
     "data": {

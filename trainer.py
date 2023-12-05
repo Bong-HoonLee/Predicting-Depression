@@ -45,7 +45,7 @@ class Trainer():
         for config in self.configs:
             model = config['model']
             model_class = model['class']
-            model_params = model['params']
+            module_list = model['module_list']
 
             data = config['data']
             train_X = torch.tensor(pd.read_csv(data['train_X']['path'], index_col=data['train_X']['index_col']).to_numpy(dtype=np.float32))
@@ -64,7 +64,7 @@ class Trainer():
             dataset = TensorDataset(train_X, train_y)
             dataloader = DataLoader(dataset, **data_loader_params)
 
-            model = model_class(**model_params).to(device)
+            model = model_class(module_list).to(device)
             loss_func = hyperparameters['loss']
             optimizer = optim(model.parameters(), **optim_params)
 
@@ -86,7 +86,7 @@ class Trainer():
             config_name = config['name']
             model = config['model']
             model_class = model['class']
-            model_params = model['params']
+            module_list = model['module_list']
 
             data = config['data']
             train_X = torch.tensor(pd.read_csv(data['train_X']['path'], index_col=data['train_X']['index_col']).to_numpy(dtype=np.float32))
@@ -102,8 +102,8 @@ class Trainer():
             n_split = hyperparameters['cv_params']['n_split']
             data_loader_params = hyperparameters['data_loader_params']
 
-            model = model_class(**model_params).to(device)
-            models = [model_class(**model_params).to(device) for _ in range(n_split)]
+            model = model_class(module_list).to(device)
+            models = [model_class(module_list).to(device) for _ in range(n_split)]
             for i, _ in enumerate(models):
                 models[i].load_state_dict(model.state_dict())
 
@@ -166,7 +166,7 @@ class Trainer():
                 'datetime': datetime_str,
                 'config_name': config_name,
                 'model_name': model_class.__name__,
-                'model_params': self._convert_all_values_to_str(model_params),
+                # 'model_params': self._convert_all_values_to_str(model_params),
                 # 'loss': hyperparameters['loss'].__name__,
                 'optim': optim.__name__,
                 'lr': optim_params['lr'],

@@ -3,17 +3,19 @@ import torch.nn as nn
 
 from torchmetrics.classification import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinaryAUROC
 from models.ann import ANN
-from models.simpleClassifier import SimpleClassifier
 
 config = {
-    "name": "OverfittingConfig01",
+    "name": "HN_X_231205__Config",
     "model": {
-        "class": SimpleClassifier,
-        "params": {
-            # "perceptron": (158, 64, 1),
-            # "dropout": 0.3,
-            # "activation": F.sigmoid,
-        },
+        "class": ANN,
+        "module_list": nn.ModuleList([
+            nn.Linear(224, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 1),
+            nn.Sigmoid()
+        ]),
     },
     "data": {
         "train_X": {
