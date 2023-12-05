@@ -1,34 +1,31 @@
 import torch.nn.functional as F
 import torch
+import torch.nn as nn
 
 from torchmetrics.classification import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinaryAUROC
-from models.ann import ANN
+from models.simpleClassifier import SimpleClassifier
 
 config = {
-    "name": "OverfittingConfig01",
+    "name": "training_loss_checker",
     "model": {
-        "class": ANN,
-        "params": {
-            "perceptron": (158, 64, 1),
-            "dropout": 0.3,
-            "activation": F.sigmoid,
-        },
+        "class": SimpleClassifier,
+        "params": {},
     },
     "data": {
         "train_X": {
-            "path": "data/HN_train_X.csv",
+            "path": "data/sample_X.csv",
             "index_col": None,
         },
         "train_y": {
-            "path": "data/HN_train_y.csv",
+            "path": "data/sample_y.csv",
             "index_col": None,
         },
         "test_X": {
-            "path": "data/HN_test_X.csv",
+            "path": "data/test_X.csv",
             "index_col": None,
         },
         "test_y": {
-            "path": "data/HN_test_y.csv",
+            "path": "data/test_y.csv",
             "index_col": None,
         },
         "output_dir": "output/",
@@ -38,7 +35,7 @@ config = {
             "batch_size": 32,
             "shuffle": True,
         },
-        "loss": F.binary_cross_entropy,
+        "loss": nn.BCELoss(),
         "optim": torch.optim.Adam,
         "optim_params": {
             "lr": 0.01,
@@ -53,7 +50,7 @@ config = {
         "device": "cuda"
         if torch.cuda.is_available()
         else "cpu",
-        "epochs": 100,
+        "epochs": 2000,
         'cv_params':{
             'n_split': 5,
         },

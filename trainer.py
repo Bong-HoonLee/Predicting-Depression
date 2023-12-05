@@ -167,7 +167,7 @@ class Trainer():
                 'config_name': config_name,
                 'model_name': model_class.__name__,
                 'model_params': self._convert_all_values_to_str(model_params),
-                'loss': hyperparameters['loss'].__name__,
+                # 'loss': hyperparameters['loss'].__name__,
                 'optim': optim.__name__,
                 'lr': optim_params['lr'],
                 # 'metrics': ",".join([key for key in metrics.keys()]),
@@ -190,12 +190,27 @@ class Trainer():
             return getattr(obj, '__name__', str(obj))
 
 
-    def test(self):
-        # self.model.test()
+    def generate_sample(self):
+        from sklearn.datasets import make_classification
 
+        # 합성 데이터셋 생성
+        X, y = make_classification(n_samples=100, n_features=20, n_classes=2, n_clusters_per_class=1, random_state=42)
+
+        # NumPy 배열을 PyTorch 텐서로 변환
+        X = torch.tensor(X, dtype=torch.float32)
+        y = torch.tensor(y, dtype=torch.float32)
+
+        X_np = X.numpy()
+        y_np = y.numpy()
+
+        df = pd.DataFrame(X_np)
+        df.to_csv("data/sample_X.csv", index=False)
+        df = pd.DataFrame(y_np)
+        df.to_csv("data/sample_y.csv", index=False)
+
+    def predict(self):
         #TODO testset
         #TODO testset 고르게 추출. 나이 분포, 성별 분포 고려해서 분리. PHQ 점수 분포도 잘 맞추는지 테스트 필요(고르게 추출).
-
         pass
 
 
