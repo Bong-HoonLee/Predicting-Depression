@@ -1,6 +1,7 @@
 # Custom
 .vscode
 .idea
+data
 data/
 output/
 *.csv
