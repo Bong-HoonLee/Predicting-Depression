@@ -57,6 +57,7 @@ class Trainer():
             optim = hyperparameters['optim']
             optim_params = hyperparameters['optim_params']
             metrics: torchmetrics.MetricCollection = hyperparameters['metrics']
+            metrics = metrics.to(device)
            
             data_loader_params = hyperparameters['data_loader_params']
             dataset = TensorDataset(train_X, train_y)
@@ -107,6 +108,7 @@ class Trainer():
 
             kfold = KFold(n_splits=n_split, shuffle=False)
             metrics: torchmetrics.MetricCollection = hyperparameters['metrics']
+            metrics = metrics.to(device)
             history = []
 
             for i, (trn_idx, val_idx) in enumerate(kfold.split(train_X)):

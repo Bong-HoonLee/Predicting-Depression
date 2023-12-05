@@ -12,9 +12,9 @@ config = {
         "module_list": nn.ModuleList([
             nn.Linear(224, 128),
             nn.ReLU(),
-            nn.Linear(128, 64),
+            nn.Linear(128, 32),
             nn.ReLU(),
-            nn.Linear(64, 1),
+            nn.Linear(32, 1),
             nn.Sigmoid()
         ]),
     },
