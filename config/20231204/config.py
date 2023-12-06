@@ -12,8 +12,10 @@ config = {
         "module_list": nn.ModuleList([
             nn.Linear(224, 128),
             nn.ReLU(),
+            nn.Dropout(0.3),
             nn.Linear(128, 32),
             nn.ReLU(),
+            nn.Dropout(0.1),
             nn.Linear(32, 1),
             nn.Sigmoid()
         ]),
@@ -53,7 +55,6 @@ config = {
             'recall': BinaryRecall(),
             'f1score': BinaryF1Score(),
             'auroc': BinaryAUROC(),
-            'mse': torchmetrics.MeanSquaredError(),
         }),
         "device": "cuda"
         if torch.cuda.is_available()

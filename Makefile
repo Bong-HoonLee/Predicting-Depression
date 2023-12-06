@@ -14,6 +14,8 @@ validate-test:
 data-dir-load-to-server:
 	scp -r $(shell pwd)/data/* estsoft@45.32.129.17:/data
 
+server-output-to-local:
+	scp -r estsoft@45.32.129.17:/output/* $(shell pwd)/output
 
 require-redis: 
 	docker run \

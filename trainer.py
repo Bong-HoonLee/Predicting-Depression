@@ -13,6 +13,7 @@ from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from typing import Optional
+from sklearn.preprocessing import OneHotEncoder
 
 class Trainer():
     def __init__(self, data_dir: str, config_dir: str) -> None:
@@ -20,12 +21,12 @@ class Trainer():
         self.config_dir = config_dir
         
         self.config_modules = []
-        self.load_module_from_path()
+        self._load_module_from_path()
 
         self.configs = [module.config for module in self.config_modules]
 
 
-    def load_module_from_path(self):
+    def _load_module_from_path(self):
         config_files = os.listdir(self.config_dir)
         for config_file in config_files:
             config_file = os.path.join(self.config_dir, config_file)
@@ -45,9 +46,29 @@ class Trainer():
             module_list = model['module_list']
 
             data = config['data']
-            train_X = torch.tensor(pd.read_csv(data['train_X']['path'], index_col=data['train_X']['index_col']).to_numpy(dtype=np.float32))
-            train_y = torch.tensor(pd.read_csv(data['train_y']['path'], index_col=data['train_y']['index_col']).to_numpy(dtype=np.float32))
+            train_X_df = pd.read_csv(data['train_X']['path'], index_col=data['train_X']['index_col'])
+            train_y_df = pd.read_csv(data['train_y']['path'], index_col=data['train_y']['index_col'])
+
+            train_X = torch.tensor(train_X_df.to_numpy(dtype=np.float32))
+            train_y = torch.tensor(train_y_df.to_numpy(dtype=np.float32))
             output_dir = data['output_dir']
+
+            transform = data['transform'] if 'transform' in data else None
+            if transform is not None:
+                preprocess_steps = transform['steps']
+                for step in preprocess_steps:
+                    for object, params in step.items():
+                        if object is pd.get_dummies:
+                            train_X_df = pd.get_dummies(train_X_df, params["columns"])
+                        else:
+                            obj_instance = object(**params["params"])
+                            targets = params["fit_transform_cols"]
+
+                            if isinstance(obj_instance, OneHotEncoder):
+                                ##TODO
+                                train_X_df = getattr(obj_instance, 'fit_transform')(targets)
+                            else:
+                                train_X_df[targets] = getattr(obj_instance, 'fit_transform')(train_X_df[targets])
 
             hyperparameters = config['hyper_params']
             device = hyperparameters['device']
@@ -56,8 +77,6 @@ class Trainer():
             epochs = hyperparameters['epochs']
             optim = hyperparameters['optim']
             optim_params = hyperparameters['optim_params']
-            metrics: torchmetrics.MetricCollection = hyperparameters['metrics']
-            metrics = metrics.to(device)
            
             data_loader_params = hyperparameters['data_loader_params']
             dataset = TensorDataset(train_X, train_y)
@@ -69,10 +88,8 @@ class Trainer():
 
             pbar = tqdm(range(epochs))
             for _ in pbar:
-                _ = self.train_one_epoch(model=model, dataloader=dataloader, loss_function=loss_func, optimizer=optimizer, device=device, metrics=metrics)
-                mse = metrics['mse'].compute().item()
-                metrics.reset()
-                pbar.set_postfix({"mse": mse, "rmse": np.sqrt(mse)})
+                trn_loss = self.train_one_epoch(model=model, dataloader=dataloader, loss_function=loss_func, optimizer=optimizer, device=device)
+                pbar.set_postfix({"trn_loss": trn_loss})
 
             file_name = config["name"] + "_" + datetime.now().strftime("%Y%m%d%H%M") + ".pth"
             torch.save(model.state_dict(), f"{output_dir}/{file_name}")
@@ -90,6 +107,8 @@ class Trainer():
             train_y = torch.tensor(pd.read_csv(data['train_y']['path'], index_col=data['train_y']['index_col']).to_numpy(dtype=np.float32))
             output_dir = data['output_dir']
 
+            # TODO X, y 분포도 시각화.  TODO 스크린샷으로
+
             hyperparameters = config['hyper_params']
             device = hyperparameters['device']
             print(f"running device: {device}")
@@ -106,10 +125,10 @@ class Trainer():
             for i, _ in enumerate(models):
                 models[i].load_state_dict(model.state_dict())
 
-            kfold = KFold(n_splits=n_split, shuffle=False)
+            kfold = KFold(n_splits=n_split, shuffle=False) #TODO 수정
             metrics: torchmetrics.MetricCollection = hyperparameters['metrics']
             metrics = metrics.to(device)
-            history = []
+            history = defaultdict(list)
 
             for i, (trn_idx, val_idx) in enumerate(kfold.split(train_X)):
                 X_trn, y_trn = train_X[trn_idx], train_y[trn_idx]
@@ -124,18 +143,20 @@ class Trainer():
                 loss_func = hyperparameters['loss']
                 optimizer = optim(models[i].parameters(), **optim_params)
 
-                history = defaultdict(list)
-
                 pbar = tqdm(range(epochs))
-                for _ in pbar:
-                    _ = self.train_one_epoch(model=models[i], dataloader=dl_trn ,loss_function=loss_func, optimizer=optimizer, device=device)
-                    _ = self.validate_one_epoch(model=models[i], dataloader=dl_val, loss_function=loss_func, metrics=metrics, device=device)
-                    
+                for _ in pbar: 
+                    trn_loss = self.train_one_epoch(model=models[i], dataloader=dl_trn ,loss_function=loss_func, optimizer=optimizer, device=device)
+                    val_loss = self.validate_one_epoch(model=models[i], dataloader=dl_val, loss_function=loss_func, metrics=metrics, device=device)
+
                     result = metrics.compute()
                     for metric_name, metric_value in result.items():
                         history[metric_name].append(metric_value.item())
+                    history['trn_loss'].append(trn_loss)
+                    history['val_loss'].append(val_loss)
                     metrics.reset()
-                    pbar.set_postfix({"mse": history['mse'][-1], "rmse": np.sqrt(history['mse'][-1])})
+                    pbar.set_postfix({"accuracy": history['accuracy'][-1], "trn_loss": trn_loss, "val_loss": val_loss})
+
+                    #TODO 시각화. loss 들 시각화. TODO 스크린샷으로
 
             #logging
             df_metrics = pd.DataFrame(history)
@@ -160,9 +181,9 @@ class Trainer():
                         'loss', 
                         'optim', 
                         'lr', 
-                        'metrics', 
-                        'cv_n_split', 
                         'epochs', 
+                        'trn_loss_mean',
+                        'trn_loss_std',
                         'val_loss_mean', 
                         'val_loss_std'
                     ])
@@ -174,11 +195,11 @@ class Trainer():
                 'loss': type(hyperparameters['loss']).__name__,
                 'optim': optim.__name__,
                 'lr': optim_params['lr'],
-                'metrics': ",".join([key for key in metrics.keys()]),
-                'cv_n_split': n_split,
                 'epochs': epochs,
-                'val_loss_mean': np.mean(history['mse']),
-                'val_loss_std': np.std(history['mse']),
+                'trn_loss_mean': np.mean(history['trn_loss']),
+                'trn_loss_std': np.std(history['trn_loss']),
+                'val_loss_mean': np.mean(history['val_loss']),
+                'val_loss_std': np.std(history['val_loss']),
             }])])
             df_meta.to_csv(file_name, index=False)
 
@@ -216,7 +237,7 @@ class Trainer():
         pass
 
 
-    def train_one_epoch(self, model: nn.Module, dataloader: DataLoader, loss_function, optimizer: torch.optim.Optimizer, device, metrics: Optional[torchmetrics.MetricCollection]=None) -> float:
+    def train_one_epoch(self, model: nn.Module, dataloader: DataLoader, loss_function, optimizer: torch.optim.Optimizer, device) -> float:
         model.train()
         total_loss = 0.
         for X, y in dataloader:
@@ -227,8 +248,6 @@ class Trainer():
             loss.backward()
             optimizer.step()
             total_loss += loss.item() * len(y)
-            if metrics is not None:
-                metrics.update(y_hat, y)
         return total_loss/len(dataloader.dataset)
 
     def validate_one_epoch(self, model: nn.Module, dataloader: DataLoader, loss_function, device, metrics: Optional[torchmetrics.MetricCollection]=None):
