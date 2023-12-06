@@ -40,7 +40,7 @@ class Trainer():
             self.config_modules.append(module)
         
 
-    def fit(self):
+    def train(self):
         for config in self.configs:
             model = config['model']
             model_class = model['class']
@@ -266,10 +266,22 @@ class Trainer():
         df = pd.DataFrame(y_np)
         df.to_csv("data/sample_y.csv", index=False)
 
-    def predict(self):
+
+    def test(self):
         #TODO testset
         #TODO testset 고르게 추출. 나이 분포, 성별 분포 고려해서 분리. PHQ 점수 분포도 잘 맞추는지 테스트 필요(고르게 추출).
+        X_test = pd.read_csv('HN_test_X.csv')
+        y_test = pd.read_csv('HN_test_y.csv').squeeze()  # 'squeeze'는 DataFrame을 Series로 변환
+
+        y_hat = self.predict()
+
+        # accuracy = accuracy_score(y_test, y_pred)
+
         pass
+
+    def predict(self):
+        
+        return None
 
 
     def train_one_epoch(self, model: nn.Module, dataloader: DataLoader, loss_function, optimizer: torch.optim.Optimizer, device) -> float:

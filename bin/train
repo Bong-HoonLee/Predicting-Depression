@@ -38,7 +38,7 @@ try:
         config_dir=config_dir
     )
     if args.mode == "train":
-        trainer.fit()
+        trainer.train()
     elif args.mode == "validate":
         trainer.validate()
     elif args.mode == "predict":

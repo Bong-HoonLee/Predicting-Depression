@@ -24,17 +24,19 @@ config = {
     "model": {
         "class": ANN,
         "module_list": nn.ModuleList([
-            nn.Linear(224, 128),
+            nn.Linear(219, 128),
             nn.ReLU(),
+            nn.Dropout(0.3),
             nn.Linear(128, 32),
             nn.ReLU(),
+            nn.Dropout(0.1),
             nn.Linear(32, 1),
             nn.Sigmoid()
         ]),
     },
     "data": {
         "train_X": {
-            "path": "data/HN_X_231206.csv",
+            "path": "data/HN_X_231206_wo_y.csv",
             "index_col": None,
         },
         "train_y": {
@@ -49,68 +51,68 @@ config = {
             "path": "data/HN_test_y.csv",
             "index_col": None,
         },
-        "transform": {
-            "steps": [
-                {
-                    KNNImputer: {
-                        "params": {
-                            "n_neighbors": 5,
-                            "weights": "uniform",
-                            "missing_values": float("nan"),
-                        },
-                        "fit_transform_cols": numerical
-                    }
-                },
-                {
-                    SimpleImputer: {
-                        "params": {
-                            "missing_values": float("nan"),
-                            "strategy": "most_frequent",
-                        },
-                        "fit_transform_cols": onehot
-                    }
-                },
-                {
-                    SimpleImputer: {
-                        "params": {
-                            "strategy": "most_frequent",
-                        },
-                        "fit_transform_cols": label
-                    }
-                },
-                {
-                    MinMaxScaler: {
-                        "params": {
-                            "feature_range": (0, 1),
-                        },
-                        "fit_transform_cols": numerical
-                    }
-                },
-                {
-                    OneHotEncoder: {
-                        "params": {},
-                        "fit_transform_cols": onehot
-                    }
-                },
-                {
-                    RandomUnderSampler: {
-                        "params": {
-                            "sampling_strategy": 0.1,
-                            "random_state": 42,
-                        },
-                        "fit_resample_cols": y_related + label
-                    }
-                },
-                {
-                    SMOTE: {
-                        "params": {
-                            "random_state": 42,
-                        },
-                        "fit_resample_cols": y_related + label
-                    }
-                }
-            ],
-        },
+        # "transform": {
+        #     "steps": [
+        #         {
+        #             KNNImputer: {
+        #                 "params": {
+        #                     "n_neighbors": 5,
+        #                     "weights": "uniform",
+        #                     "missing_values": float("nan"),
+        #                 },
+        #                 "fit_transform_cols": numerical
+        #             }
+        #         },
+        #         {
+        #             SimpleImputer: {
+        #                 "params": {
+        #                     "missing_values": float("nan"),
+        #                     "strategy": "most_frequent",
+        #                 },
+        #                 "fit_transform_cols": onehot
+        #             }
+        #         },
+        #         {
+        #             SimpleImputer: {
+        #                 "params": {
+        #                     "strategy": "most_frequent",
+        #                 },
+        #                 "fit_transform_cols": label
+        #             }
+        #         },
+        #         {
+        #             MinMaxScaler: {
+        #                 "params": {
+        #                     "feature_range": (0, 1),
+        #                 },
+        #                 "fit_transform_cols": numerical
+        #             }
+        #         },
+        #         {
+        #             OneHotEncoder: {
+        #                 "params": {},
+        #                 "fit_transform_cols": onehot
+        #             }
+        #         },
+        #         {
+        #             RandomUnderSampler: {
+        #                 "params": {
+        #                     "sampling_strategy": 0.1,
+        #                     "random_state": 42,
+        #                 },
+        #                 "fit_resample_cols": y_related + label
+        #             }
+        #         },
+        #         {
+        #             SMOTE: {
+        #                 "params": {
+        #                     "random_state": 42,
+        #                 },
+        #                 "fit_resample_cols": y_related + label
+        #             }
+        #         }
+        #     ],
+        # },
         
         "output_dir": "output/",
     },
@@ -122,7 +124,7 @@ config = {
         "loss": nn.BCELoss(),
         "optim": torch.optim.Adam,
         "optim_params": {
-            "lr": 0.01,
+            "lr": 0.001,
         },
         "metrics": torchmetrics.MetricCollection({
             'accuracy': BinaryAccuracy(),
