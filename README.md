@@ -127,7 +127,7 @@
             "justMyCode": true,
             "args": [
                 "--mode=train",
-                "--config-dir=config/samples/20231201",
+                "--config-dir=config/20231204",
             ]
         },
         {
@@ -139,11 +139,23 @@
             "justMyCode": true,
             "args": [
                 "--mode=validate",
-                "--config-dir=config/samples/20231201",
+                "--config-dir=config/20231204",
             ]
         },
         {
-            "name": "Python: sample",
+            "name": "Python: challenge train",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}${pathSeparator}bin${pathSeparator}train",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--mode=train",
+                "--config-dir=config/20231206",
+            ]
+        },
+        {
+            "name": "Python: challenge validate",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}${pathSeparator}bin${pathSeparator}train",
@@ -151,9 +163,9 @@
             "justMyCode": true,
             "args": [
                 "--mode=validate",
-                "--config-dir=config/samples/house",
+                "--config-dir=config/20231206",
             ]
-        }
+        },
     ]
 }
 ```
