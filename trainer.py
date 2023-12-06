@@ -6,9 +6,9 @@ import torch
 import torch.nn as nn
 import torchmetrics
 
+from sklearn.model_selection import StratifiedKFold
 from collections import defaultdict
 from datetime import datetime
-from sklearn.model_selection import KFold
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
@@ -125,12 +125,12 @@ class Trainer():
             for i, _ in enumerate(models):
                 models[i].load_state_dict(model.state_dict())
 
-            kfold = KFold(n_splits=n_split, shuffle=False) #TODO 수정
+            skf = StratifiedKFold(n_splits=n_split, shuffle=True, random_state=42)
             metrics: torchmetrics.MetricCollection = hyperparameters['metrics']
             metrics = metrics.to(device)
             history = defaultdict(list)
 
-            for i, (trn_idx, val_idx) in enumerate(kfold.split(train_X)):
+            for i, (trn_idx, val_idx) in enumerate(skf.split(train_X, train_y)):
                 X_trn, y_trn = train_X[trn_idx], train_y[trn_idx]
                 X_val, y_val = train_X[val_idx], train_y[val_idx]
 
@@ -148,18 +148,19 @@ class Trainer():
                     trn_loss = self.train_one_epoch(model=models[i], dataloader=dl_trn ,loss_function=loss_func, optimizer=optimizer, device=device)
                     val_loss = self.validate_one_epoch(model=models[i], dataloader=dl_val, loss_function=loss_func, metrics=metrics, device=device)
 
+                    history['trn_loss'].append(trn_loss)
+                    history['val_loss'].append(val_loss)
+
                     result = metrics.compute()
                     for metric_name, metric_value in result.items():
                         history[metric_name].append(metric_value.item())
-                    history['trn_loss'].append(trn_loss)
-                    history['val_loss'].append(val_loss)
                     metrics.reset()
-                    pbar.set_postfix({"accuracy": history['accuracy'][-1], "trn_loss": trn_loss, "val_loss": val_loss})
-
+                    pbar.set_postfix({"acc": history['accuracy'][-1], "trn_loss": trn_loss, "val_loss": val_loss})
                     #TODO 시각화. loss 들 시각화. TODO 스크린샷으로
 
             #logging
             df_metrics = pd.DataFrame(history)
+            df_metrics = df_metrics.iloc[::epochs] #fold 단위로만 기록. 다남기고 싶으면 주석처리
             print(df_metrics)
 
             output_dir += "/validation"
@@ -171,23 +172,29 @@ class Trainer():
             file_name = output_dir + '/' + data['train_X']['path'].split('/')[-1]
             file_name = file_name.replace(".csv", "_summary.csv")
             if os.path.exists(file_name):
-                df_meta = pd.read_csv(file_name)
+                df_summary = pd.read_csv(file_name)
             else:
-                df_meta = pd.DataFrame(columns=[
-                        'datetime',
-                        'config_name', 
-                        'model_name', 
-                        'module_list', 
-                        'loss', 
-                        'optim', 
-                        'lr', 
-                        'epochs', 
-                        'trn_loss_mean',
-                        'trn_loss_std',
-                        'val_loss_mean', 
-                        'val_loss_std'
-                    ])
-            df_meta = pd.concat([df_meta, pd.DataFrame([{
+                columns = [
+                    'datetime',
+                    'config_name', 
+                    'model_name', 
+                    'module_list', 
+                    'loss', 
+                    'optim', 
+                    'lr', 
+                    'epochs', 
+                    'trn_loss_mean',
+                    'trn_loss_std',
+                    'val_loss_mean', 
+                    'val_loss_std'
+                ]
+                for metric_name in history.keys():
+                    if metric_name == 'trn_loss' or metric_name == 'val_loss':
+                        continue
+                    columns.append(metric_name + '_mean')
+                    columns.append(metric_name + '_std')
+                df_summary = pd.DataFrame(columns=columns)
+            row = {
                 'datetime': datetime_str,
                 'config_name': config_name,
                 'model_name': model_class.__name__,
@@ -200,9 +207,14 @@ class Trainer():
                 'trn_loss_std': np.std(history['trn_loss']),
                 'val_loss_mean': np.mean(history['val_loss']),
                 'val_loss_std': np.std(history['val_loss']),
-            }])])
-            df_meta.to_csv(file_name, index=False)
-
+            }
+            for metric_name in history.keys():
+                if metric_name == 'trn_loss' or metric_name == 'val_loss':
+                    continue
+                row[metric_name + '_mean'] = np.mean(history[metric_name])
+                row[metric_name + '_std'] = np.std(history[metric_name])
+            df_summary = pd.concat([df_summary, pd.DataFrame([row])])
+            df_summary.to_csv(file_name, index=False)
 
     def _convert_all_values_to_str(self, obj):
         if isinstance(obj, dict):
