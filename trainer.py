@@ -51,30 +51,48 @@ class Trainer():
             module_list = model['module_list']
 
             data = config['data']
-            train_X_df = pd.read_csv(data['train_X']['path'], index_col=data['train_X']['index_col'])
-            train_y_df = pd.read_csv(data['train_y']['path'], index_col=data['train_y']['index_col'])
+            cached_X_file = f"{self.data_dir}/transformed/{data['train_X']['path'].split('/')[-1]}"
+            cached_y_file = f"{self.data_dir}/transformed/{data['train_y']['path'].split('/')[-1]}"
+            if os.path.exists(cached_X_file) and os.path.exists(cached_y_file):
+                train_X_df = pd.read_csv(cached_X_file)
+                train_y_df = pd.read_csv(cached_y_file)
+            else:
+                train_X_df = pd.read_csv(data['train_X']['path'], index_col=data['train_X']['index_col'])
+                train_y_df = pd.read_csv(data['train_y']['path'], index_col=data['train_y']['index_col'])
+
+                transform = data['transform'] if 'transform' in data else None
+                if transform is not None:
+                    transform_steps = transform['steps']
+                    for step in transform_steps:
+                        for transform_obj, params in step.items():
+                            obj_instance = transform_obj(**params["params"])
+                            if obj_instance.__class__ == OneHotEncoder:
+                                targets = params["fit_transform_cols"]
+                                # 원-핫 인코딩 적용할 컬럼 선택
+                                onehot_encoded = obj_instance.fit_transform(train_X_df[targets])
+                                # 원-핫 인코딩된 데이터프레임 생성
+                                onehot_encoded_df = pd.DataFrame(onehot_encoded, columns=obj_instance.get_feature_names_out(targets))
+                                # 원래 데이터프레임에서 인코딩 대상 컬럼 제거
+                                train_X_df = train_X_df.drop(targets, axis=1)
+                                # 원-핫 인코딩된 데이터프레임과 원래 데이터프레임 결합
+                                train_X_df = pd.concat([train_X_df, onehot_encoded_df], axis=1)
+                            elif hasattr(obj_instance, 'fit_resample'):
+                                targets = params["fit_resample_cols"]
+                                train_X_df, train_y_df = getattr(obj_instance, 'fit_resample')(train_X_df, train_y_df)
+                            elif hasattr(obj_instance, 'fit_transform'):
+                                targets = params["fit_transform_cols"]
+                                train_X_df[targets] = getattr(obj_instance, 'fit_transform')(train_X_df[targets])
+                            else:
+                                raise ValueError("transform object must have fit_transform or fit_resample method")
+                print(f"transformed train_X_df.shape: {train_X_df.shape}")
+                print(f"transformed train_y_df.shape: {train_y_df.shape}")
+                train_X_df.to_csv(cached_X_file, index=False)
+                train_y_df.to_csv(cached_y_file, index=False)
 
             train_X = torch.tensor(train_X_df.to_numpy(dtype=np.float32))
             train_y = torch.tensor(train_y_df.to_numpy(dtype=np.float32))
-            output_dir = data['output_dir']
-
-            transform = data['transform'] if 'transform' in data else None
-            if transform is not None:
-                transform_steps = transform['steps']
-                for step in transform_steps:
-                    for transform_obj, params in step.items():
-                        if transform_obj is pd.get_dummies:
-                            train_X_df = pd.get_dummies(train_X_df, params["columns"])
-                        else:
-                            obj_instance = transform_obj(**params["params"])
-                            targets = params["fit_transform_cols"]
-
-                            if isinstance(obj_instance, OneHotEncoder):
-                                ##TODO
-                                train_X_df = getattr(obj_instance, 'fit_transform')(targets)
-                            else:
-                                train_X_df[targets] = getattr(obj_instance, 'fit_transform')(train_X_df[targets])
-
+            output_dir = data['output_dir']      
+            
             hyperparameters = config['hyper_params']
             device = hyperparameters['device']
             print(f"running device: {device}")
@@ -108,8 +126,46 @@ class Trainer():
             module_list = model['module_list']
 
             data = config['data']
-            train_X = torch.tensor(pd.read_csv(data['train_X']['path'], index_col=data['train_X']['index_col']).to_numpy(dtype=np.float32))
-            train_y = torch.tensor(pd.read_csv(data['train_y']['path'], index_col=data['train_y']['index_col']).to_numpy(dtype=np.float32))
+            cached_X_file = f"{self.data_dir}/transformed/{data['train_X']['path'].split('/')[-1]}"
+            cached_y_file = f"{self.data_dir}/transformed/{data['train_y']['path'].split('/')[-1]}"
+            if os.path.exists(cached_X_file) and os.path.exists(cached_y_file):
+                train_X_df = pd.read_csv(cached_X_file)
+                train_y_df = pd.read_csv(cached_y_file)
+            else:
+                train_X_df = pd.read_csv(data['train_X']['path'], index_col=data['train_X']['index_col'])
+                train_y_df = pd.read_csv(data['train_y']['path'], index_col=data['train_y']['index_col'])
+
+                transform = data['transform'] if 'transform' in data else None
+                if transform is not None:
+                    transform_steps = transform['steps']
+                    for step in transform_steps:
+                        for transform_obj, params in step.items():
+                            obj_instance = transform_obj(**params["params"])
+                            if obj_instance.__class__ == OneHotEncoder:
+                                targets = params["fit_transform_cols"]
+                                # 원-핫 인코딩 적용할 컬럼 선택
+                                onehot_encoded = obj_instance.fit_transform(train_X_df[targets])
+                                # 원-핫 인코딩된 데이터프레임 생성
+                                onehot_encoded_df = pd.DataFrame(onehot_encoded, columns=obj_instance.get_feature_names_out(targets))
+                                # 원래 데이터프레임에서 인코딩 대상 컬럼 제거
+                                train_X_df = train_X_df.drop(targets, axis=1)
+                                # 원-핫 인코딩된 데이터프레임과 원래 데이터프레임 결합
+                                train_X_df = pd.concat([train_X_df, onehot_encoded_df], axis=1)
+                            elif hasattr(obj_instance, 'fit_resample'):
+                                targets = params["fit_resample_cols"]
+                                train_X_df, train_y_df = getattr(obj_instance, 'fit_resample')(train_X_df, train_y_df)
+                            elif hasattr(obj_instance, 'fit_transform'):
+                                targets = params["fit_transform_cols"]
+                                train_X_df[targets] = getattr(obj_instance, 'fit_transform')(train_X_df[targets])
+                            else:
+                                raise ValueError("transform object must have fit_transform or fit_resample method")
+                print(f"transformed train_X_df.shape: {train_X_df.shape}")
+                print(f"transformed train_y_df.shape: {train_y_df.shape}")
+                train_X_df.to_csv(cached_X_file, index=False)
+                train_y_df.to_csv(cached_y_file, index=False)
+
+            train_X = torch.tensor(train_X_df.to_numpy(dtype=np.float32))
+            train_y = torch.tensor(train_y_df.to_numpy(dtype=np.float32))
             output_dir = data['output_dir']
 
             # TODO X, y 분포도 시각화.  TODO 스크린샷으로
@@ -294,11 +350,14 @@ class Trainer():
         model.load_state_dict(torch.load(model_path))
         model.eval()
 
-        y_hat = model.forward(X)
+        with torch.inference_mode():
+            y_hat = model.forward(X)
 
-        preds = y_hat > 0.5
-        accuracy = (preds == y).sum().float() / len(y)
-        print(f"Accuracy: {accuracy:.4f}")
+            preds = y_hat > 0.7
+            preds_int = preds.to(torch.float32) 
+
+            accuracy = (preds_int == y).sum().float() / len(y)
+            print(f"Accuracy: {accuracy:.4f}")
       
 
     def train_one_epoch(self, model: nn.Module, dataloader: DataLoader, loss_function, optimizer: torch.optim.Optimizer, device) -> float:
