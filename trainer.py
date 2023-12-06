@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torchmetrics
+import matplotlib.pyplot as plt
 
 from sklearn.model_selection import StratifiedKFold
 from collections import defaultdict
@@ -55,13 +56,13 @@ class Trainer():
 
             transform = data['transform'] if 'transform' in data else None
             if transform is not None:
-                preprocess_steps = transform['steps']
-                for step in preprocess_steps:
-                    for object, params in step.items():
-                        if object is pd.get_dummies:
+                transform_steps = transform['steps']
+                for step in transform_steps:
+                    for transform_obj, params in step.items():
+                        if transform_obj is pd.get_dummies:
                             train_X_df = pd.get_dummies(train_X_df, params["columns"])
                         else:
-                            obj_instance = object(**params["params"])
+                            obj_instance = transform_obj(**params["params"])
                             targets = params["fit_transform_cols"]
 
                             if isinstance(obj_instance, OneHotEncoder):
@@ -157,16 +158,38 @@ class Trainer():
                     metrics.reset()
                     pbar.set_postfix({"acc": history['accuracy'][-1], "trn_loss": trn_loss, "val_loss": val_loss})
                     #TODO 시각화. loss 들 시각화. TODO 스크린샷으로
-
+            
             #logging
-            df_metrics = pd.DataFrame(history)
-            df_metrics = df_metrics.iloc[::epochs] #fold 단위로만 기록. 다남기고 싶으면 주석처리
-            print(df_metrics)
-
+            now = datetime.now().strftime("%Y%m%d%H%M%S")
             output_dir += "/validation"
             output_dir = output_dir.replace("//", "/")
-            datetime_str = datetime.now().strftime("%Y%m%d%H%M%S")
-            file_name = f"{config_name}_history_{datetime_str}.csv"
+
+            plt.figure(figsize=(10, 6))
+            plt.subplot(2, 1, 1)
+            plt.plot(history['accuracy'], label='Accuracy')
+            plt.title('Accuracy over Epochs')
+            plt.ylabel('Accuracy', rotation=0)
+            plt.legend()
+
+            plt.subplot(2, 1, 2)
+            plt.plot(history['trn_loss'], label='Train Loss')
+            plt.plot(history['val_loss'], label='Validation Loss')
+
+            plt.title('Training Progress')
+            plt.ylabel('Value', rotation=0)
+            plt.xlabel('Epoch')
+            plt.legend()
+            plt.tight_layout()
+
+            file_name = f"{config_name}_history_{now}.png"
+            plt.savefig(f"{output_dir}/{file_name}")
+            # plt.show()
+
+            df_metrics = pd.DataFrame(history)
+            df_metrics = df_metrics.iloc[::epochs] #fold 단위로만 기록. 다남기고 싶으면 주석처리 or 파라미터화
+            print(df_metrics)
+
+            file_name = f"{config_name}_history_{now}.csv"
             df_metrics.to_csv(f"{output_dir}/{file_name}", index=False)
 
             file_name = output_dir + '/' + data['train_X']['path'].split('/')[-1]
@@ -195,7 +218,7 @@ class Trainer():
                     columns.append(metric_name + '_std')
                 df_summary = pd.DataFrame(columns=columns)
             row = {
-                'datetime': datetime_str,
+                'datetime': now,
                 'config_name': config_name,
                 'model_name': model_class.__name__,
                 'module_list': self._convert_all_values_to_str(module_list),
