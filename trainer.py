@@ -77,7 +77,6 @@ class Trainer():
                                 # 원-핫 인코딩된 데이터프레임과 원래 데이터프레임 결합
                                 train_X_df = pd.concat([train_X_df, onehot_encoded_df], axis=1)
                             elif hasattr(obj_instance, 'fit_resample'):
-                                targets = params["fit_resample_cols"]
                                 train_X_df, train_y_df = getattr(obj_instance, 'fit_resample')(train_X_df, train_y_df)
                             elif hasattr(obj_instance, 'fit_transform'):
                                 targets = params["fit_transform_cols"]
@@ -152,7 +151,6 @@ class Trainer():
                                 # 원-핫 인코딩된 데이터프레임과 원래 데이터프레임 결합
                                 train_X_df = pd.concat([train_X_df, onehot_encoded_df], axis=1)
                             elif hasattr(obj_instance, 'fit_resample'):
-                                targets = params["fit_resample_cols"]
                                 train_X_df, train_y_df = getattr(obj_instance, 'fit_resample')(train_X_df, train_y_df)
                             elif hasattr(obj_instance, 'fit_transform'):
                                 targets = params["fit_transform_cols"]
@@ -161,8 +159,8 @@ class Trainer():
                                 raise ValueError("transform object must have fit_transform or fit_resample method")
                 print(f"transformed train_X_df.shape: {train_X_df.shape}")
                 print(f"transformed train_y_df.shape: {train_y_df.shape}")
-                train_X_df.to_csv(cached_X_file, index=False)
-                train_y_df.to_csv(cached_y_file, index=False)
+                # train_X_df.to_csv(cached_X_file, index=False)
+                # train_y_df.to_csv(cached_y_file, index=False)
 
             train_X = torch.tensor(train_X_df.to_numpy(dtype=np.float32))
             train_y = torch.tensor(train_y_df.to_numpy(dtype=np.float32))
@@ -368,7 +366,6 @@ class Trainer():
                         # 원-핫 인코딩된 데이터프레임과 원래 데이터프레임 결합
                         test_X_df = pd.concat([test_X_df, onehot_encoded_df], axis=1)
                     elif hasattr(obj_instance, 'fit_resample'):
-                        targets = params["fit_resample_cols"]
                         test_X_df, test_y_df = getattr(obj_instance, 'fit_resample')(test_X_df, test_y_df)
                     elif hasattr(obj_instance, 'fit_transform'):
                         targets = params["fit_transform_cols"]

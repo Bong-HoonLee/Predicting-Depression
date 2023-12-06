@@ -102,7 +102,6 @@ config = {
                             "sampling_strategy": 0.5,
                             "random_state": 42,
                         },
-                        "fit_resample_cols": numerical + onehot + label
                     }
                 },
                 {
@@ -110,7 +109,6 @@ config = {
                         "params": {
                             "random_state": 42,
                         },
-                        "fit_resample_cols": numerical + onehot + label
                     }
                 }
             ],

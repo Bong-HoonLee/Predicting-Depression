@@ -77,7 +77,6 @@ config = {
                             "sampling_strategy": 0.5,
                             "random_state": 42,
                         },
-                        "fit_resample_cols": numerical
                     }
                 },
                 {
@@ -85,7 +84,6 @@ config = {
                         "params": {
                             "random_state": 42,
                         },
-                        "fit_resample_cols": numerical
                     }
                 }
             ],
