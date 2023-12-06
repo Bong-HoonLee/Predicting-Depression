@@ -20,11 +20,11 @@ y_related = ['BP_PHQ_1', 'BP_PHQ_2', 'BP_PHQ_3', 'BP_PHQ_4', 'BP_PHQ_5', 'BP_PHQ
 y = "depressed"
 
 config = {
-    "name": "HN_X_231206",
+    "name": "HN_X_231207_only_numerical",
     "model": {
         "class": ANN,
         "module_list": nn.ModuleList([
-            nn.Linear(220, 32),
+            nn.Linear(22, 32),
             nn.ReLU(),
             nn.Dropout(0.3),
             nn.Linear(32, 8),
@@ -36,19 +36,19 @@ config = {
     },
     "data": {
         "train_X": {
-            "path": "data/HN_X_231206.csv",
+            "path": "data/HN_X_numerical_231206_wo_transform.csv",
             "index_col": None,
         },
         "train_y": {
-            "path": "data/HN_y_231206.csv",
+            "path": "data/HN_y_numerical_231206.csv",
             "index_col": None,
         },
         "test_X": {
-            "path": "data/HN_X_231206_wo_y_test.csv",
+            "path": "data/HN_X_231206_numerical_wo_transform_test.csv",
             "index_col": None,
         },
         "test_y": {
-            "path": "data/HN_y_231206_wo_y_test.csv",
+            "path": "data/HN_y_231206_numerical__test.csv",
             "index_col": None,
         },
         "transform": {
@@ -64,23 +64,6 @@ config = {
                     }
                 },
                 {
-                    SimpleImputer: {
-                        "params": {
-                            "missing_values": float("nan"),
-                            "strategy": "most_frequent",
-                        },
-                        "fit_transform_cols": onehot
-                    }
-                },
-                {
-                    SimpleImputer: {
-                        "params": {
-                            "strategy": "most_frequent",
-                        },
-                        "fit_transform_cols": label
-                    }
-                },
-                {
                     MinMaxScaler: {
                         "params": {
                             "feature_range": (0, 1),
@@ -89,20 +72,12 @@ config = {
                     }
                 },
                 {
-                    OneHotEncoder: {
-                        "params": {
-                            "sparse": False,
-                        },
-                        "fit_transform_cols": onehot
-                    }
-                },
-                {
                     RandomUnderSampler: {
                         "params": {
                             "sampling_strategy": 0.5,
                             "random_state": 42,
                         },
-                        "fit_resample_cols": numerical + onehot + label
+                        "fit_resample_cols": numerical
                     }
                 },
                 {
@@ -110,7 +85,7 @@ config = {
                         "params": {
                             "random_state": 42,
                         },
-                        "fit_resample_cols": numerical + onehot + label
+                        "fit_resample_cols": numerical
                     }
                 }
             ],
@@ -125,7 +100,7 @@ config = {
         "loss": nn.BCELoss(),
         "optim": torch.optim.Adam,
         "optim_params": {
-            "lr": 0.00001,
+            "lr": 0.0001,
         },
         "metrics": torchmetrics.MetricCollection({
             'accuracy': BinaryAccuracy(),

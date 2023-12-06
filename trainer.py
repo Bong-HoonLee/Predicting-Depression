@@ -86,8 +86,8 @@ class Trainer():
                                 raise ValueError("transform object must have fit_transform or fit_resample method")
                 print(f"transformed train_X_df.shape: {train_X_df.shape}")
                 print(f"transformed train_y_df.shape: {train_y_df.shape}")
-                train_X_df.to_csv(cached_X_file, index=False)
-                train_y_df.to_csv(cached_y_file, index=False)
+                # train_X_df.to_csv(cached_X_file, index=False)
+                # train_y_df.to_csv(cached_y_file, index=False)
 
             train_X = torch.tensor(train_X_df.to_numpy(dtype=np.float32))
             train_y = torch.tensor(train_y_df.to_numpy(dtype=np.float32))
@@ -347,8 +347,39 @@ class Trainer():
         module_list = model['module_list']
         
         data = config['data']
-        X = torch.tensor(pd.read_csv(data['test_X']['path'], index_col=data['test_X']['index_col']).to_numpy(dtype=np.float32))
-        y = torch.tensor(pd.read_csv(data['test_y']['path'], index_col=data['test_y']['index_col']).to_numpy(dtype=np.float32))
+
+        test_X_df = pd.read_csv(data['test_X']['path'], index_col=data['test_X']['index_col'])
+        test_y_df = pd.read_csv(data['test_y']['path'], index_col=data['test_y']['index_col'])
+
+        transform = data['transform'] if 'transform' in data else None
+        if transform is not None:
+            transform_steps = transform['steps']
+            for step in transform_steps:
+                for transform_obj, params in step.items():
+                    obj_instance = transform_obj(**params["params"])
+                    if obj_instance.__class__ == OneHotEncoder:
+                        targets = params["fit_transform_cols"]
+                        # 원-핫 인코딩 적용할 컬럼 선택
+                        onehot_encoded = obj_instance.fit_transform(test_X_df[targets])
+                        # 원-핫 인코딩된 데이터프레임 생성
+                        onehot_encoded_df = pd.DataFrame(onehot_encoded, columns=obj_instance.get_feature_names_out(targets))
+                        # 원래 데이터프레임에서 인코딩 대상 컬럼 제거
+                        test_X_df = test_X_df.drop(targets, axis=1)
+                        # 원-핫 인코딩된 데이터프레임과 원래 데이터프레임 결합
+                        test_X_df = pd.concat([test_X_df, onehot_encoded_df], axis=1)
+                    elif hasattr(obj_instance, 'fit_resample'):
+                        targets = params["fit_resample_cols"]
+                        test_X_df, test_y_df = getattr(obj_instance, 'fit_resample')(test_X_df, test_y_df)
+                    elif hasattr(obj_instance, 'fit_transform'):
+                        targets = params["fit_transform_cols"]
+                        test_X_df[targets] = getattr(obj_instance, 'fit_transform')(test_X_df[targets])
+                    else:
+                        raise ValueError("transform object must have fit_transform or fit_resample method")
+        print(f"transformed test_X_df.shape: {test_X_df.shape}")
+        print(f"transformed test_y_df.shape: {test_y_df.shape}")
+
+        X = torch.Tensor(test_X_df.to_numpy(dtype=np.float32))
+        y = torch.Tensor(test_y_df.to_numpy(dtype=np.float32))
 
         #테스트셋의 input 개수로 모델의 input 개수 조정
         module_list[0] = nn.Linear(X.shape[1], module_list[0].out_features)
@@ -363,7 +394,7 @@ class Trainer():
         with torch.inference_mode():
             y_hat = model.forward(X)
 
-            preds = y_hat > 0.7
+            preds = y_hat > 0.5
             preds_int = preds.to(torch.float32) 
 
             accuracy = (preds_int == y).sum().float() / len(y)
