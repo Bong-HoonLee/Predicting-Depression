@@ -168,7 +168,6 @@ class Trainer():
             train_y = torch.tensor(train_y_df.to_numpy(dtype=np.float32))
             output_dir = data['output_dir']
 
-            # TODO X, y 분포도 시각화.  TODO 스크린샷으로
 
             hyperparameters = config['hyper_params']
             device = hyperparameters['device']
@@ -217,28 +216,39 @@ class Trainer():
                         history[metric_name].append(metric_value.item())
                     metrics.reset()
                     pbar.set_postfix({"acc": history['accuracy'][-1], "trn_loss": trn_loss, "val_loss": val_loss})
-                    #TODO 시각화. loss 들 시각화. TODO 스크린샷으로
             
             #logging
             now = datetime.now().strftime("%Y%m%d%H%M%S")
             output_dir += "/validation"
             output_dir = output_dir.replace("//", "/")
 
+            def divide_into_segments(data, segments):
+                n = len(data)
+                return [data[i * n // segments: (i + 1) * n // segments] for i in range(segments)]
+
+            accuracy_segments = divide_into_segments(history['accuracy'], n_split)
+            trn_loss_segments = divide_into_segments(history['trn_loss'], n_split)
+            val_loss_segments = divide_into_segments(history['val_loss'], n_split)
+
             plt.figure(figsize=(10, 6))
+
             plt.subplot(2, 1, 1)
-            plt.plot(history['accuracy'], label='Accuracy')
+            for i, segment in enumerate(accuracy_segments):
+                plt.plot(segment, label=f'Accuracy Fold {i + 1}')
             plt.title('Accuracy over Epochs')
-            plt.ylabel('Accuracy', rotation=0)
+            plt.ylabel('Accuracy')
             plt.legend()
 
             plt.subplot(2, 1, 2)
-            plt.plot(history['trn_loss'], label='Train Loss')
-            plt.plot(history['val_loss'], label='Validation Loss')
-
+            for i, segment in enumerate(trn_loss_segments):
+                plt.plot(segment, label=f'Train Loss Fold {i + 1}')
+            for i, segment in enumerate(val_loss_segments):
+                plt.plot(segment, label=f'Validation Loss Fold {i + 1}', linestyle='--')
             plt.title('Training Progress')
-            plt.ylabel('Value', rotation=0)
+            plt.ylabel('Loss')
             plt.xlabel('Epoch')
             plt.legend()
+
             plt.tight_layout()
 
             file_name = f"{config_name}_history_{now}.png"
