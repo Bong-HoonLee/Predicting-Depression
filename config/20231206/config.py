@@ -44,11 +44,11 @@ config = {
             "index_col": None,
         },
         "test_X": {
-            "path": "data/HN_test_X.csv",
+            "path": "data/HN_X_231206_wo_y_test.csv",
             "index_col": None,
         },
         "test_y": {
-            "path": "data/HN_test_y.csv",
+            "path": "data/HN_y_231206_wo_y_test.csv",
             "index_col": None,
         },
         # "transform": {
@@ -124,7 +124,7 @@ config = {
         "loss": nn.BCELoss(),
         "optim": torch.optim.Adam,
         "optim_params": {
-            "lr": 0.001,
+            "lr": 0.00001,
         },
         "metrics": torchmetrics.MetricCollection({
             'accuracy': BinaryAccuracy(),

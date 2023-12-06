@@ -7,6 +7,7 @@ import torch.nn as nn
 import torchmetrics
 import matplotlib.pyplot as plt
 
+
 from sklearn.model_selection import StratifiedKFold
 from collections import defaultdict
 from datetime import datetime
@@ -17,14 +18,17 @@ from typing import Optional
 from sklearn.preprocessing import OneHotEncoder
 
 class Trainer():
-    def __init__(self, data_dir: str, config_dir: str) -> None:
+    def __init__(self, data_dir: str, config_dir: str, config_name: str = None) -> None:
         self.data_dir = data_dir
         self.config_dir = config_dir
+        self.config_name = config_name
         
         self.config_modules = []
         self._load_module_from_path()
 
         self.configs = [module.config for module in self.config_modules]
+        if config_name is not None:
+            self.configs = [config for config in self.configs if config['name'] == config_name]
 
 
     def _load_module_from_path(self):
@@ -186,7 +190,7 @@ class Trainer():
             # plt.show()
 
             df_metrics = pd.DataFrame(history)
-            df_metrics = df_metrics.iloc[::epochs] #fold 단위로만 기록. 다남기고 싶으면 주석처리 or 파라미터화
+            df_metrics = df_metrics.iloc[epochs-1::epochs] #fold 단위로만 기록. 다남기고 싶으면 주석처리 or 파라미터화
             print(df_metrics)
 
             file_name = f"{config_name}_history_{now}.csv"
@@ -267,22 +271,35 @@ class Trainer():
         df.to_csv("data/sample_y.csv", index=False)
 
 
-    def test(self):
-        #TODO testset
-        #TODO testset 고르게 추출. 나이 분포, 성별 분포 고려해서 분리. PHQ 점수 분포도 잘 맞추는지 테스트 필요(고르게 추출).
-        X_test = pd.read_csv('HN_test_X.csv')
-        y_test = pd.read_csv('HN_test_y.csv').squeeze()  # 'squeeze'는 DataFrame을 Series로 변환
+    def test(self, model_path: str):
+        if len(self.configs) > 1:
+            raise ValueError("config name must be specified")
+        config = self.configs[0]
 
-        y_hat = self.predict()
-
-        # accuracy = accuracy_score(y_test, y_pred)
-
-        pass
-
-    def predict(self):
+        model = config['model']
+        model_class = model['class']
+        module_list = model['module_list']
         
-        return None
+        data = config['data']
+        X = torch.tensor(pd.read_csv(data['test_X']['path'], index_col=data['test_X']['index_col']).to_numpy(dtype=np.float32))
+        y = torch.tensor(pd.read_csv(data['test_y']['path'], index_col=data['test_y']['index_col']).to_numpy(dtype=np.float32))
 
+        #테스트셋의 input 개수로 모델의 input 개수 조정
+        module_list[0] = nn.Linear(X.shape[1], module_list[0].out_features)
+
+        device = config['hyper_params']['device']
+        print(f"running device: {device}")
+
+        model: nn.Module = model_class(module_list).to(device)
+        model.load_state_dict(torch.load(model_path))
+        model.eval()
+
+        y_hat = model.forward(X)
+
+        preds = y_hat > 0.5
+        accuracy = (preds == y).sum().float() / len(y)
+        print(f"Accuracy: {accuracy:.4f}")
+      
 
     def train_one_epoch(self, model: nn.Module, dataloader: DataLoader, loss_function, optimizer: torch.optim.Optimizer, device) -> float:
         model.train()

@@ -25,6 +25,8 @@ parser.add_argument("--user", default="estsoft", type=str, help="home user name"
 parser.add_argument("--mode", default="train", type=str, help="train or test")
 parser.add_argument("--data-dir", default="data", type=str, help="data directory path")
 parser.add_argument("--config-dir", default="config/20231204", type=str, help="config directory path")
+parser.add_argument("--model-path", default="models/HN_X_231206_202312061515.pth", type=str, help="model path")
+parser.add_argument("--config-name", default=None, type=str, help="model path")
 args = parser.parse_args()
 
 try:
@@ -32,23 +34,22 @@ try:
 
     data_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, args.data_dir))
     config_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, args.config_dir))
-
+    
     trainer = Trainer(
         data_dir=data_dir,
-        config_dir=config_dir
+        config_dir=config_dir,
+        config_name=args.config_name,
     )
     if args.mode == "train":
         trainer.train()
     elif args.mode == "validate":
         trainer.validate()
-    elif args.mode == "predict":
-        trainer.predict()
+    elif args.mode == "test":
+        trainer.test(args.model_path)
     elif args.mode == "generate_sample":
         trainer.generate_sample()
     else:
         raise ValueError("mode must be train or test")
-    
-    a = 1
 except Exception as e:
     print(e)
     raise e
