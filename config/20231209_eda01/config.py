@@ -13,9 +13,10 @@ from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import SMOTE
 
 #eda01 (from archive/corr_heatmap_test.ipynb)
-numerical=['age', 'HE_wc', 'ainc', 'HE_ht', 'HE_wt']
-onehot=['LQ1_sb', 'BO1', 'DI1_pt', 'DE1_pr', 'BH2_61', 'DI3_pr', 'BO1_1', 'marri_1', 'BD1', 'DI3_pt', 'npins', 'LQ2_ab', 'BH1', 'D_2_1', 'DJ4_pr', 'DJ4_pt', 'DI1_pr', 'LQ4_00', 'DE1_pt', 'educ', 'sex']
-label=['BE5_1', 'BE3_31', 'D_1_1', 'cfam', 'ho_incm', 'BA2_13', 'BP1', 'incm5', 'edu', 'incm', 'DI3_2', 'ho_incm5']
+numerical = ['age', 'HE_wc', 'ainc', 'HE_ht', 'HE_wt']
+onehot = ['LQ1_sb', 'BO1', 'DI1_pt', 'DE1_pr', 'DI2_pr', 'BH2_61', 'DI3_pr', 'BO1_1', 'marri_1', 'DI2_pt', 'BD1', 'EC_stt_2', 'DI3_pt', 'live_t', 'npins', 'EC_wht_0', 'LQ2_ab', 'BH1', 'D_2_1', 'DJ4_pr', 'DJ4_pt', 'DI1_pr', 'LQ4_00', 'DE1_pt', 'educ', 'EC_occp', 'sex']
+label = ['BE5_1', 'BE3_31', 'D_1_1', 'cfam', 'ho_incm', 'BP1', 'incm5', 'edu', 'incm', 'DI3_2', 'ho_incm5']
+
 y_related = ['BP_PHQ_1', 'BP_PHQ_2', 'BP_PHQ_3', 'BP_PHQ_4', 'BP_PHQ_5', 'BP_PHQ_6', 'BP_PHQ_7', 'BP_PHQ_8', 'BP_PHQ_9', 'mh_PHQ_S', 'BP6_10', 'BP6_31', 'DF2_pr', 'DF2_pt', 'BP1']
 y = "depressed"
 
@@ -24,7 +25,7 @@ config = {
     "model": {
         "class": ANN,
         "module_list": nn.ModuleList([
-            nn.Linear(86, 64),
+            nn.Linear(111, 64),
             nn.ReLU(),
             nn.Linear(64, 1),
             nn.Sigmoid()
@@ -95,7 +96,7 @@ config = {
                 {
                     RandomUnderSampler: {
                         "params": {
-                            "sampling_strategy": 0.375,
+                            "sampling_strategy": 0.1,
                             "random_state": 42,
                         },
                     }
