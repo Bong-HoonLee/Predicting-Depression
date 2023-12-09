@@ -18,6 +18,10 @@ for item in dir_list:
         continue
     sys.path.append(path)
 
+if not os.path.exists('src_path/data/transformed'):
+    os.makedirs('src_path/data/transformed')
+if not os.path.exists('src_path/output/validation'):
+    os.makedirs('src_path/output/validation')
 
 # args 파싱
 parser = argparse.ArgumentParser(description="I am trainer!! ha-ha-ha", add_help=True)

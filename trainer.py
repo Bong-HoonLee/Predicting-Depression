@@ -378,9 +378,6 @@ class Trainer():
         X = torch.Tensor(test_X_df.to_numpy(dtype=np.float32))
         y = torch.Tensor(test_y_df.to_numpy(dtype=np.float32))
 
-        #테스트셋의 input 개수로 모델의 input 개수 조정
-        module_list[0] = nn.Linear(X.shape[1], module_list[0].out_features)
-
         device = config['hyper_params']['device']
         print(f"running device: {device}")
 
@@ -392,9 +389,7 @@ class Trainer():
             y_hat = model.forward(X)
 
             preds = y_hat > 0.5
-            preds_int = preds.to(torch.float32) 
-
-            accuracy = (preds_int == y).sum().float() / len(y)
+            accuracy = (preds == y).sum().float() / len(y)
             print(f"Accuracy: {accuracy:.4f}")
       
 
@@ -405,10 +400,10 @@ class Trainer():
             X, y = X.to(device), y.to(device)
             y_hat = model.forward(X)
             loss = loss_function(y_hat, y)
+            total_loss += loss.item() * len(y)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            total_loss += loss.item() * len(y)
         return total_loss/len(dataloader.dataset)
 
     def validate_one_epoch(self, model: nn.Module, dataloader: DataLoader, loss_function, device, metrics: Optional[torchmetrics.MetricCollection]=None):

@@ -24,13 +24,13 @@ config = {
     "model": {
         "class": ANN,
         "module_list": nn.ModuleList([
-            nn.Linear(220, 32),
+            nn.Linear(220, 16), # downsizing
             nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(32, 8),
+            nn.Dropout(0.5), # 0.5
+            nn.Linear(16, 4),
             nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(8, 1),
+            nn.Dropout(0.5),
+            nn.Linear(4, 1),
             nn.Sigmoid()
         ]),
     },
@@ -56,7 +56,7 @@ config = {
                 {
                     KNNImputer: {
                         "params": {
-                            "n_neighbors": 5,
+                            "n_neighbors": 10,
                             "weights": "uniform",
                             "missing_values": float("nan"),
                         },
