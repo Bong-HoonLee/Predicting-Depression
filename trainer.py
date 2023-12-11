@@ -250,6 +250,10 @@ class Trainer:
             n_split = hyperparameters["cv_params"]["n_split"]
             data_loader_params = hyperparameters["data_loader_params"]
 
+            # lr scheduler
+            lr_scheduler = hyperparameters["lr_scheduler"]
+            scheduler_params = hyperparameters["scheduler_params"]
+
             model = model_class(module_list).to(device)
             models = [model_class(module_list).to(device) for _ in range(n_split)]
             for i, _ in enumerate(models):
@@ -273,6 +277,7 @@ class Trainer:
 
                 loss_func = hyperparameters["loss"]
                 optimizer = optim(models[i].parameters(), **optim_params)
+                scheduler = lr_scheduler(optimizer, **scheduler_params)
 
                 pbar = tqdm(range(epochs))
                 for _ in pbar:
@@ -290,7 +295,7 @@ class Trainer:
                         metrics=metrics,
                         device=device,
                     )
-
+                    scheduler.step(val_loss)
                     history["trn_loss"].append(trn_loss)
                     history["val_loss"].append(val_loss)
 
