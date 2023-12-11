@@ -18,15 +18,15 @@ from typing import Optional
 from sklearn.preprocessing import OneHotEncoder
 from torchmetrics.classification import BinaryAccuracy
 
-class Trainer():
+
+class Trainer:
     def __init__(self, data_dir: str, config_dir: str, config_name: str = None) -> None:
         self.data_dir = data_dir
         self.config_dir = config_dir
         self.config_name = config_name
-        
+
         self.configs = []
         self._load_module_from_path(self.config_name)
-
 
     def _load_module_from_path(self, target_config_name):
         config_files = os.listdir(self.config_dir)
@@ -39,59 +39,85 @@ class Trainer():
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
 
-            self.configs.append({
-                'config': module.config,
-                'features': module.numerical + module.onehot + module.label
-            })
+            self.configs.append(
+                {
+                    "config": module.config,
+                    "features": module.numerical + module.onehot + module.label,
+                }
+            )
 
         if target_config_name is not None:
-            self.configs = [config for config in self.configs if config['config']['name'] == target_config_name]
-        
+            self.configs = [
+                config
+                for config in self.configs
+                if config["config"]["name"] == target_config_name
+            ]
 
     def train(self):
         for i, config in enumerate(self.configs):
-            config = self.configs[i]['config']
-            features = self.configs[i]['features']
+            config = self.configs[i]["config"]
+            features = self.configs[i]["features"]
 
-            model = config['model']
-            model_class = model['class']
-            module_list = model['module_list']
+            model = config["model"]
+            model_class = model["class"]
+            module_list = model["module_list"]
 
-            data = config['data']
-            cached_X_file = f"{self.data_dir}/transformed/{data['train_X']['path'].split('/')[-1]}"
-            cached_y_file = f"{self.data_dir}/transformed/{data['train_y']['path'].split('/')[-1]}"
+            data = config["data"]
+            cached_X_file = (
+                f"{self.data_dir}/transformed/{data['train_X']['path'].split('/')[-1]}"
+            )
+            cached_y_file = (
+                f"{self.data_dir}/transformed/{data['train_y']['path'].split('/')[-1]}"
+            )
             if os.path.exists(cached_X_file) and os.path.exists(cached_y_file):
                 train_X_df = pd.read_csv(cached_X_file)
                 train_y_df = pd.read_csv(cached_y_file)
                 train_X_df = train_X_df[features]
             else:
-                train_X_df = pd.read_csv(data['train_X']['path'], index_col=data['train_X']['index_col'])
-                train_y_df = pd.read_csv(data['train_y']['path'], index_col=data['train_y']['index_col'])
+                train_X_df = pd.read_csv(
+                    data["train_X"]["path"], index_col=data["train_X"]["index_col"]
+                )
+                train_y_df = pd.read_csv(
+                    data["train_y"]["path"], index_col=data["train_y"]["index_col"]
+                )
                 train_X_df = train_X_df[features]
 
-                transform = data['transform'] if 'transform' in data else None
+                transform = data["transform"] if "transform" in data else None
                 if transform is not None:
-                    transform_steps = transform['steps']
+                    transform_steps = transform["steps"]
                     for step in transform_steps:
                         for transform_obj, params in step.items():
                             obj_instance = transform_obj(**params["params"])
                             if obj_instance.__class__ == OneHotEncoder:
                                 targets = params["fit_transform_cols"]
                                 # 원-핫 인코딩 적용할 컬럼 선택
-                                onehot_encoded = obj_instance.fit_transform(train_X_df[targets])
+                                onehot_encoded = obj_instance.fit_transform(
+                                    train_X_df[targets]
+                                )
                                 # 원-핫 인코딩된 데이터프레임 생성
-                                onehot_encoded_df = pd.DataFrame(onehot_encoded, columns=obj_instance.get_feature_names_out(targets))
+                                onehot_encoded_df = pd.DataFrame(
+                                    onehot_encoded,
+                                    columns=obj_instance.get_feature_names_out(targets),
+                                )
                                 # 원래 데이터프레임에서 인코딩 대상 컬럼 제거
                                 train_X_df = train_X_df.drop(targets, axis=1)
                                 # 원-핫 인코딩된 데이터프레임과 원래 데이터프레임 결합
-                                train_X_df = pd.concat([train_X_df, onehot_encoded_df], axis=1)
-                            elif hasattr(obj_instance, 'fit_resample'):
-                                train_X_df, train_y_df = getattr(obj_instance, 'fit_resample')(train_X_df, train_y_df)
-                            elif hasattr(obj_instance, 'fit_transform'):
+                                train_X_df = pd.concat(
+                                    [train_X_df, onehot_encoded_df], axis=1
+                                )
+                            elif hasattr(obj_instance, "fit_resample"):
+                                train_X_df, train_y_df = getattr(
+                                    obj_instance, "fit_resample"
+                                )(train_X_df, train_y_df)
+                            elif hasattr(obj_instance, "fit_transform"):
                                 targets = params["fit_transform_cols"]
-                                train_X_df[targets] = getattr(obj_instance, 'fit_transform')(train_X_df[targets])
+                                train_X_df[targets] = getattr(
+                                    obj_instance, "fit_transform"
+                                )(train_X_df[targets])
                             else:
-                                raise ValueError("transform object must have fit_transform or fit_resample method")
+                                raise ValueError(
+                                    "transform object must have fit_transform or fit_resample method"
+                                )
                 print(f"transformed train_X_df.shape: {train_X_df.shape}")
                 print(f"transformed train_y_df.shape: {train_y_df.shape}")
                 # train_X_df.to_csv(cached_X_file, index=False)
@@ -99,104 +125,135 @@ class Trainer():
 
             train_X = torch.tensor(train_X_df.to_numpy(dtype=np.float32))
             train_y = torch.tensor(train_y_df.to_numpy(dtype=np.float32))
-            output_dir = data['output_dir']      
+            output_dir = data["output_dir"]
 
             # 설정한 피쳐들로 사용하도록 오버라이딩
-            module_list[0] = nn.Linear(len(train_X_df.columns), module_list[0].out_features)
-            
-            hyperparameters = config['hyper_params']
-            device = hyperparameters['device']
+            module_list[0] = nn.Linear(
+                len(train_X_df.columns), module_list[0].out_features
+            )
+
+            hyperparameters = config["hyper_params"]
+            device = hyperparameters["device"]
             print(f"running device: {device}")
 
-            epochs = hyperparameters['epochs']
-            optim = hyperparameters['optim']
-            optim_params = hyperparameters['optim_params']
-           
-            data_loader_params = hyperparameters['data_loader_params']
+            epochs = hyperparameters["epochs"]
+            optim = hyperparameters["optim"]
+            optim_params = hyperparameters["optim_params"]
+
+            data_loader_params = hyperparameters["data_loader_params"]
             dataset = TensorDataset(train_X, train_y)
             dataloader = DataLoader(dataset, **data_loader_params)
 
             model = model_class(module_list).to(device)
-            loss_func = hyperparameters['loss']
+            loss_func = hyperparameters["loss"]
             optimizer = optim(model.parameters(), **optim_params)
 
             pbar = tqdm(range(epochs))
             for _ in pbar:
-                trn_loss = self.train_one_epoch(model=model, dataloader=dataloader, loss_function=loss_func, optimizer=optimizer, device=device)
+                trn_loss = self.train_one_epoch(
+                    model=model,
+                    dataloader=dataloader,
+                    loss_function=loss_func,
+                    optimizer=optimizer,
+                    device=device,
+                )
                 pbar.set_postfix({"trn_loss": trn_loss})
 
-            file_name = config["name"] + "_" + datetime.now().strftime("%Y%m%d%H%M") + ".pth"
+            file_name = (
+                config["name"] + "_" + datetime.now().strftime("%Y%m%d%H%M") + ".pth"
+            )
             torch.save(model.state_dict(), f"{output_dir}/{file_name}")
-
 
     def validate(self):
         for i, config in enumerate(self.configs):
-            config = self.configs[i]['config']
-            features = self.configs[i]['features']
+            config = self.configs[i]["config"]
+            features = self.configs[i]["features"]
 
-            config_name = config['name']
-            model = config['model']
-            model_class = model['class']
-            module_list = model['module_list']
+            config_name = config["name"]
+            model = config["model"]
+            model_class = model["class"]
+            module_list = model["module_list"]
 
-            data = config['data']
-            cached_X_file = f"{self.data_dir}/transformed/{data['train_X']['path'].split('/')[-1]}"
-            cached_y_file = f"{self.data_dir}/transformed/{data['train_y']['path'].split('/')[-1]}"
+            data = config["data"]
+            cached_X_file = (
+                f"{self.data_dir}/transformed/{data['train_X']['path'].split('/')[-1]}"
+            )
+            cached_y_file = (
+                f"{self.data_dir}/transformed/{data['train_y']['path'].split('/')[-1]}"
+            )
             if os.path.exists(cached_X_file) and os.path.exists(cached_y_file):
                 train_X_df = pd.read_csv(cached_X_file)
                 train_y_df = pd.read_csv(cached_y_file)
                 train_X_df = train_X_df[features]
             else:
-                train_X_df = pd.read_csv(data['train_X']['path'], index_col=data['train_X']['index_col'])
-                train_y_df = pd.read_csv(data['train_y']['path'], index_col=data['train_y']['index_col'])
+                train_X_df = pd.read_csv(
+                    data["train_X"]["path"], index_col=data["train_X"]["index_col"]
+                )
+                train_y_df = pd.read_csv(
+                    data["train_y"]["path"], index_col=data["train_y"]["index_col"]
+                )
                 train_X_df = train_X_df[features]
 
-                transform = data['transform'] if 'transform' in data else None
+                transform = data["transform"] if "transform" in data else None
                 if transform is not None:
-                    transform_steps = transform['steps']
+                    transform_steps = transform["steps"]
                     for step in transform_steps:
                         for transform_obj, params in step.items():
                             obj_instance = transform_obj(**params["params"])
                             if obj_instance.__class__ == OneHotEncoder:
                                 targets = params["fit_transform_cols"]
                                 # 원-핫 인코딩 적용할 컬럼 선택
-                                onehot_encoded = obj_instance.fit_transform(train_X_df[targets])
+                                onehot_encoded = obj_instance.fit_transform(
+                                    train_X_df[targets]
+                                )
                                 # 원-핫 인코딩된 데이터프레임 생성
-                                onehot_encoded_df = pd.DataFrame(onehot_encoded, columns=obj_instance.get_feature_names_out(targets))
+                                onehot_encoded_df = pd.DataFrame(
+                                    onehot_encoded,
+                                    columns=obj_instance.get_feature_names_out(targets),
+                                )
                                 # 원래 데이터프레임에서 인코딩 대상 컬럼 제거
                                 train_X_df = train_X_df.drop(targets, axis=1)
                                 # 원-핫 인코딩된 데이터프레임과 원래 데이터프레임 결합
-                                train_X_df = pd.concat([train_X_df, onehot_encoded_df], axis=1)
-                            elif hasattr(obj_instance, 'fit_resample'):
-                                train_X_df, train_y_df = getattr(obj_instance, 'fit_resample')(train_X_df, train_y_df)
-                            elif hasattr(obj_instance, 'fit_transform'):
+                                train_X_df = pd.concat(
+                                    [train_X_df, onehot_encoded_df], axis=1
+                                )
+                            elif hasattr(obj_instance, "fit_resample"):
+                                train_X_df, train_y_df = getattr(
+                                    obj_instance, "fit_resample"
+                                )(train_X_df, train_y_df)
+                            elif hasattr(obj_instance, "fit_transform"):
                                 targets = params["fit_transform_cols"]
-                                train_X_df[targets] = getattr(obj_instance, 'fit_transform')(train_X_df[targets])
+                                train_X_df[targets] = getattr(
+                                    obj_instance, "fit_transform"
+                                )(train_X_df[targets])
                             else:
-                                raise ValueError("transform object must have fit_transform or fit_resample method")
+                                raise ValueError(
+                                    "transform object must have fit_transform or fit_resample method"
+                                )
                 print(f"transformed train_X_df.shape: {train_X_df.shape}")
                 print(f"transformed train_y_df.shape: {train_y_df.shape}")
                 # train_X_df.to_csv(cached_X_file, index=False)
                 # train_y_df.to_csv(cached_y_file, index=False)
 
-
             train_X = torch.tensor(train_X_df.to_numpy(dtype=np.float32))
             train_y = torch.tensor(train_y_df.to_numpy(dtype=np.float32))
-            output_dir = data['output_dir']
+            output_dir = data["output_dir"]
 
             # 설정한 피쳐들로 사용하도록 오버라이딩
-            module_list[0] = nn.Linear(len(train_X_df.columns), module_list[0].out_features)
+            module_list[0] = nn.Linear(
+                len(train_X_df.columns), module_list[0].out_features
+            )
 
-            hyperparameters = config['hyper_params']
-            device = hyperparameters['device']
+            hyperparameters = config["hyper_params"]
+            device = hyperparameters["device"]
             print(f"running device: {device}")
 
-            epochs = hyperparameters['epochs']
-            optim = hyperparameters['optim']
-            optim_params = hyperparameters['optim_params']
+            epochs = hyperparameters["epochs"]
+            optim = hyperparameters["optim"]
+            optim_params = hyperparameters["optim_params"]
 
-            n_split = hyperparameters['cv_params']['n_split']
-            data_loader_params = hyperparameters['data_loader_params']
+            n_split = hyperparameters["cv_params"]["n_split"]
+            data_loader_params = hyperparameters["data_loader_params"]
 
             model = model_class(module_list).to(device)
             models = [model_class(module_list).to(device) for _ in range(n_split)]
@@ -204,7 +261,7 @@ class Trainer():
                 models[i].load_state_dict(model.state_dict())
 
             skf = StratifiedKFold(n_splits=n_split, shuffle=True, random_state=42)
-            metrics: torchmetrics.MetricCollection = hyperparameters['metrics']
+            metrics: torchmetrics.MetricCollection = hyperparameters["metrics"]
             metrics = metrics.to(device)
             metrics.reset()
             history = defaultdict(list)
@@ -219,54 +276,75 @@ class Trainer():
                 dl_trn = DataLoader(ds_trn, **data_loader_params)
                 dl_val = DataLoader(ds_val, **data_loader_params)
 
-                loss_func = hyperparameters['loss']
+                loss_func = hyperparameters["loss"]
                 optimizer = optim(models[i].parameters(), **optim_params)
 
                 pbar = tqdm(range(epochs))
-                for _ in pbar: 
-                    trn_loss = self.train_one_epoch(model=models[i], dataloader=dl_trn ,loss_function=loss_func, optimizer=optimizer, device=device)
-                    val_loss = self.validate_one_epoch(model=models[i], dataloader=dl_val, loss_function=loss_func, metrics=metrics, device=device)
+                for _ in pbar:
+                    trn_loss = self.train_one_epoch(
+                        model=models[i],
+                        dataloader=dl_trn,
+                        loss_function=loss_func,
+                        optimizer=optimizer,
+                        device=device,
+                    )
+                    val_loss = self.validate_one_epoch(
+                        model=models[i],
+                        dataloader=dl_val,
+                        loss_function=loss_func,
+                        metrics=metrics,
+                        device=device,
+                    )
 
-                    history['trn_loss'].append(trn_loss)
-                    history['val_loss'].append(val_loss)
+                    history["trn_loss"].append(trn_loss)
+                    history["val_loss"].append(val_loss)
 
                     result = metrics.compute()
                     for metric_name, metric_value in result.items():
                         history[metric_name].append(metric_value.item())
 
                     metrics.reset()
-                    pbar.set_postfix({"acc": history['accuracy'][-1], "trn_loss": trn_loss, "val_loss": val_loss})
-            
-            #logging
+                    pbar.set_postfix(
+                        {
+                            "acc": history["accuracy"][-1],
+                            "trn_loss": trn_loss,
+                            "val_loss": val_loss,
+                        }
+                    )
+
+            # logging
             now = datetime.now().strftime("%Y%m%d%H%M%S")
             output_dir += "/validation"
             output_dir = output_dir.replace("//", "/")
 
             def divide_into_segments(data, segments):
                 n = len(data)
-                return [data[i * n // segments: (i + 1) * n // segments] for i in range(segments)]
+                return [
+                    data[i * n // segments : (i + 1) * n // segments]
+                    for i in range(segments)
+                ]
 
-            accuracy_segments = divide_into_segments(history['accuracy'], n_split)
-            trn_loss_segments = divide_into_segments(history['trn_loss'], n_split)
-            val_loss_segments = divide_into_segments(history['val_loss'], n_split)
+            accuracy_segments = divide_into_segments(history["accuracy"], n_split)
+            trn_loss_segments = divide_into_segments(history["trn_loss"], n_split)
+            val_loss_segments = divide_into_segments(history["val_loss"], n_split)
 
             plt.figure(figsize=(10, 6))
 
             plt.subplot(2, 1, 1)
             for i, segment in enumerate(accuracy_segments):
-                plt.plot(segment, label=f'Accuracy Fold {i + 1}')
-            plt.title('Accuracy over Epochs')
-            plt.ylabel('Accuracy')
+                plt.plot(segment, label=f"Accuracy Fold {i + 1}")
+            plt.title("Accuracy over Epochs")
+            plt.ylabel("Accuracy")
             plt.legend()
 
             plt.subplot(2, 1, 2)
             for i, segment in enumerate(trn_loss_segments):
-                plt.plot(segment, label=f'Train Loss Fold {i + 1}')
+                plt.plot(segment, label=f"Train Loss Fold {i + 1}")
             for i, segment in enumerate(val_loss_segments):
-                plt.plot(segment, label=f'Validation Loss Fold {i + 1}', linestyle='--')
-            plt.title('Training Progress')
-            plt.ylabel('Loss')
-            plt.xlabel('Epoch')
+                plt.plot(segment, label=f"Validation Loss Fold {i + 1}", linestyle="--")
+            plt.title("Training Progress")
+            plt.ylabel("Loss")
+            plt.xlabel("Epoch")
             plt.legend()
 
             plt.tight_layout()
@@ -276,56 +354,58 @@ class Trainer():
             # plt.show()
 
             df_metrics = pd.DataFrame(history)
-            df_metrics = df_metrics.iloc[epochs-1::epochs] #fold 단위로만 기록. 다남기고 싶으면 주석처리 or 파라미터화
+            df_metrics = df_metrics.iloc[
+                epochs - 1 :: epochs
+            ]  # fold 단위로만 기록. 다남기고 싶으면 주석처리 or 파라미터화
             print(df_metrics)
 
             file_name = f"{config_name}_history_{now}.csv"
             df_metrics.to_csv(f"{output_dir}/{file_name}", index=False)
 
-            file_name = output_dir + '/' + data['train_X']['path'].split('/')[-1]
+            file_name = output_dir + "/" + data["train_X"]["path"].split("/")[-1]
             file_name = file_name.replace(".csv", "_summary.csv")
             if os.path.exists(file_name):
                 df_summary = pd.read_csv(file_name)
             else:
                 columns = [
-                    'datetime',
-                    'config_name', 
-                    'model_name', 
-                    'module_list', 
-                    'loss', 
-                    'optim', 
-                    'lr', 
-                    'epochs', 
-                    'trn_loss_mean',
-                    'trn_loss_std',
-                    'val_loss_mean', 
-                    'val_loss_std'
+                    "datetime",
+                    "config_name",
+                    "model_name",
+                    "module_list",
+                    "loss",
+                    "optim",
+                    "lr",
+                    "epochs",
+                    "trn_loss_mean",
+                    "trn_loss_std",
+                    "val_loss_mean",
+                    "val_loss_std",
                 ]
                 for metric_name in history.keys():
-                    if metric_name == 'trn_loss' or metric_name == 'val_loss':
+                    if metric_name == "trn_loss" or metric_name == "val_loss":
                         continue
-                    columns.append(metric_name + '_mean')
-                    columns.append(metric_name + '_std')
+                    columns.append(metric_name + "_mean")
+                    columns.append(metric_name + "_std")
                 df_summary = pd.DataFrame(columns=columns)
             row = {
-                'datetime': now,
-                'config_name': config_name,
-                'model_name': model_class.__name__,
-                'module_list': self._convert_all_values_to_str(module_list),
-                'loss': type(hyperparameters['loss']).__name__,
-                'optim': optim.__name__,
-                'lr': optim_params['lr'],
-                'epochs': epochs,
-                'trn_loss_mean': np.mean(history['trn_loss']),
-                'trn_loss_std': np.std(history['trn_loss']),
-                'val_loss_mean': np.mean(history['val_loss']),
-                'val_loss_std': np.std(history['val_loss']),
+                "datetime": now,
+                "config_name": config_name,
+                "model_name": model_class.__name__,
+                "module_list": self._convert_all_values_to_str(module_list),
+                "loss": type(hyperparameters["loss"]).__name__,
+                "optim": optim.__name__,
+                "lr": optim_params["lr"],
+                "epochs": epochs,
+                "trn_loss_mean": np.mean(history["trn_loss"]),
+                "trn_loss_std": np.std(history["trn_loss"]),
+                "val_loss_mean": np.mean(history["val_loss"]),
+                "val_loss_std": np.std(history["val_loss"]),
             }
             for metric_name in history.keys():
-                if metric_name == 'trn_loss' or metric_name == 'val_loss':
+                if metric_name == "trn_loss" or metric_name == "val_loss":
                     continue
-                row[metric_name + '_mean'] = np.mean(history[metric_name])
-                row[metric_name + '_std'] = np.std(history[metric_name])
+                row[metric_name + "_mean"] = np.mean(history[metric_name])
+                row[metric_name + "_std"] = np.std(history[metric_name])
             df_summary = pd.concat([df_summary, pd.DataFrame([row])])
             df_summary.to_csv(file_name, index=False)
 
@@ -335,14 +415,19 @@ class Trainer():
         elif isinstance(obj, list) or isinstance(obj, tuple):
             return [self._convert_all_values_to_str(elem) for elem in obj]
         else:
-            return getattr(obj, '__name__', str(obj))
-
+            return getattr(obj, "__name__", str(obj))
 
     def generate_sample(self):
         from sklearn.datasets import make_classification
 
         # 합성 데이터셋 생성
-        X, y = make_classification(n_samples=100, n_features=20, n_classes=2, n_clusters_per_class=1, random_state=42)
+        X, y = make_classification(
+            n_samples=100,
+            n_features=20,
+            n_classes=2,
+            n_clusters_per_class=1,
+            random_state=42,
+        )
 
         # NumPy 배열을 PyTorch 텐서로 변환
         X = torch.tensor(X, dtype=torch.float32)
@@ -356,27 +441,30 @@ class Trainer():
         df = pd.DataFrame(y_np)
         df.to_csv("data/sample_y.csv", index=False)
 
-
     def test(self, model_path: str):
         if len(self.configs) > 1:
             raise ValueError("config name must be specified")
-        config = self.configs[0]['config']
-        features = self.configs[0]['features']
+        config = self.configs[0]["config"]
+        features = self.configs[0]["features"]
 
-        model = config['model']
-        model_class = model['class']
-        module_list = model['module_list']
-        
-        data = config['data']
+        model = config["model"]
+        model_class = model["class"]
+        module_list = model["module_list"]
 
-        test_X_df = pd.read_csv(data['test_X']['path'], index_col=data['test_X']['index_col'])
-        test_y_df = pd.read_csv(data['test_y']['path'], index_col=data['test_y']['index_col'])
+        data = config["data"]
+
+        test_X_df = pd.read_csv(
+            data["test_X"]["path"], index_col=data["test_X"]["index_col"]
+        )
+        test_y_df = pd.read_csv(
+            data["test_y"]["path"], index_col=data["test_y"]["index_col"]
+        )
 
         test_X_df = test_X_df[features]
 
-        transform = data['transform'] if 'transform' in data else None
+        transform = data["transform"] if "transform" in data else None
         if transform is not None:
-            transform_steps = transform['steps']
+            transform_steps = transform["steps"]
             for step in transform_steps:
                 for transform_obj, params in step.items():
                     obj_instance = transform_obj(**params["params"])
@@ -385,18 +473,27 @@ class Trainer():
                         # 원-핫 인코딩 적용할 컬럼 선택
                         onehot_encoded = obj_instance.fit_transform(test_X_df[targets])
                         # 원-핫 인코딩된 데이터프레임 생성
-                        onehot_encoded_df = pd.DataFrame(onehot_encoded, columns=obj_instance.get_feature_names_out(targets))
+                        onehot_encoded_df = pd.DataFrame(
+                            onehot_encoded,
+                            columns=obj_instance.get_feature_names_out(targets),
+                        )
                         # 원래 데이터프레임에서 인코딩 대상 컬럼 제거
                         test_X_df = test_X_df.drop(targets, axis=1)
                         # 원-핫 인코딩된 데이터프레임과 원래 데이터프레임 결합
                         test_X_df = pd.concat([test_X_df, onehot_encoded_df], axis=1)
-                    elif hasattr(obj_instance, 'fit_resample'):
-                        test_X_df, test_y_df = getattr(obj_instance, 'fit_resample')(test_X_df, test_y_df)
-                    elif hasattr(obj_instance, 'fit_transform'):
+                    elif hasattr(obj_instance, "fit_resample"):
+                        test_X_df, test_y_df = getattr(obj_instance, "fit_resample")(
+                            test_X_df, test_y_df
+                        )
+                    elif hasattr(obj_instance, "fit_transform"):
                         targets = params["fit_transform_cols"]
-                        test_X_df[targets] = getattr(obj_instance, 'fit_transform')(test_X_df[targets])
+                        test_X_df[targets] = getattr(obj_instance, "fit_transform")(
+                            test_X_df[targets]
+                        )
                     else:
-                        raise ValueError("transform object must have fit_transform or fit_resample method")
+                        raise ValueError(
+                            "transform object must have fit_transform or fit_resample method"
+                        )
         print(f"transformed test_X_df.shape: {test_X_df.shape}")
         print(f"transformed test_y_df.shape: {test_y_df.shape}")
 
@@ -406,7 +503,7 @@ class Trainer():
         X = torch.Tensor(test_X_df.to_numpy(dtype=np.float32))
         y = torch.Tensor(test_y_df.to_numpy(dtype=np.float32))
 
-        device = config['hyper_params']['device']
+        device = config["hyper_params"]["device"]
         print(f"running device: {device}")
 
         model: nn.Module = model_class(module_list).to(device)
@@ -419,11 +516,17 @@ class Trainer():
             metric = BinaryAccuracy()
             accuracy = metric(preds, y).item()
             print(f"Accuracy: {accuracy:.4f}")
-      
 
-    def train_one_epoch(self, model: nn.Module, dataloader: DataLoader, loss_function, optimizer: torch.optim.Optimizer, device) -> float:
+    def train_one_epoch(
+        self,
+        model: nn.Module,
+        dataloader: DataLoader,
+        loss_function,
+        optimizer: torch.optim.Optimizer,
+        device,
+    ) -> float:
         model.train()
-        total_loss = 0.
+        total_loss = 0.0
 
         for X, y in dataloader:
             X, y = X.to(device), y.to(device)
@@ -434,36 +537,38 @@ class Trainer():
             loss.backward()
             optimizer.step()
 
-            y_all = torch.cat([y_all, y])
-            y_hat_all = torch.cat([y_hat_all, y_hat])
-            
-        return total_loss/len(dataloader.dataset)
-        
+        return total_loss / len(dataloader.dataset)
+
     # def accuracy(self, y_pred, y_true):
     #     correct_predictions = torch.eq(y_pred, y_true).sum().item()
     #     total_predictions = y_true.numel()
     #     return correct_predictions / total_predictions
-    
 
     # def precision(self, y_pred, y_true):
     #     true_positive = torch.logical_and(y_pred == 1, y_true == 1).sum().item()
     #     predicted_positive = (y_pred == 1).sum().item()
     #     return true_positive / predicted_positive if predicted_positive > 0 else 0
-    
+
     # def recall(self, y_pred, y_true):
     #     true_positive = torch.logical_and(y_pred == 1, y_true == 1).sum().item()
     #     actual_positive = (y_true == 1).sum().item()
     #     return true_positive / actual_positive if actual_positive > 0 else 0
-    
+
     # def f1_score(self, y_pred, y_true):
     #     prec = self.precision(y_pred, y_true)
     #     rec = self.recall(y_pred, y_true)
     #     return 2 * (prec * rec) / (prec + rec) if (prec + rec) > 0 else 0
 
-
-    def validate_one_epoch(self, model: nn.Module, dataloader: DataLoader, loss_function, device, metrics: Optional[torchmetrics.MetricCollection]=None):
+    def validate_one_epoch(
+        self,
+        model: nn.Module,
+        dataloader: DataLoader,
+        loss_function,
+        device,
+        metrics: Optional[torchmetrics.MetricCollection] = None,
+    ):
         model.eval()
-        total_loss = 0.
+        total_loss = 0.0
 
         with torch.inference_mode():
             for X, y in dataloader:
@@ -473,7 +578,7 @@ class Trainer():
                 if metrics is not None:
                     metrics.update(y_hat, y)
 
-        return total_loss/len(dataloader.dataset)
+        return total_loss / len(dataloader.dataset)
 
     def test_step(self, model: nn.Module, dataloader: DataLoader):
         pass
