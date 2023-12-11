@@ -16,6 +16,7 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from typing import Optional
 from sklearn.preprocessing import OneHotEncoder
+from torchmetrics.classification import BinaryAccuracy
 
 class Trainer():
     def __init__(self, data_dir: str, config_dir: str, config_name: str = None) -> None:
@@ -205,6 +206,7 @@ class Trainer():
             skf = StratifiedKFold(n_splits=n_split, shuffle=True, random_state=42)
             metrics: torchmetrics.MetricCollection = hyperparameters['metrics']
             metrics = metrics.to(device)
+            metrics.reset()
             history = defaultdict(list)
 
             for i, (trn_idx, val_idx) in enumerate(skf.split(train_X, train_y)):
@@ -231,6 +233,7 @@ class Trainer():
                     result = metrics.compute()
                     for metric_name, metric_value in result.items():
                         history[metric_name].append(metric_value.item())
+
                     metrics.reset()
                     pbar.set_postfix({"acc": history['accuracy'][-1], "trn_loss": trn_loss, "val_loss": val_loss})
             
@@ -369,6 +372,8 @@ class Trainer():
         test_X_df = pd.read_csv(data['test_X']['path'], index_col=data['test_X']['index_col'])
         test_y_df = pd.read_csv(data['test_y']['path'], index_col=data['test_y']['index_col'])
 
+        test_X_df = test_X_df[features]
+
         transform = data['transform'] if 'transform' in data else None
         if transform is not None:
             transform_steps = transform['steps']
@@ -409,16 +414,17 @@ class Trainer():
         model.eval()
 
         with torch.inference_mode():
-            y_hat = model.forward(X)
+            preds = model.forward(X)
 
-            preds = y_hat > 0.5
-            accuracy = (preds == y).sum().float() / len(y)
+            metric = BinaryAccuracy()
+            accuracy = metric(preds, y).item()
             print(f"Accuracy: {accuracy:.4f}")
       
 
     def train_one_epoch(self, model: nn.Module, dataloader: DataLoader, loss_function, optimizer: torch.optim.Optimizer, device) -> float:
         model.train()
         total_loss = 0.
+
         for X, y in dataloader:
             X, y = X.to(device), y.to(device)
             y_hat = model.forward(X)
@@ -427,11 +433,38 @@ class Trainer():
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+            y_all = torch.cat([y_all, y])
+            y_hat_all = torch.cat([y_hat_all, y_hat])
+            
         return total_loss/len(dataloader.dataset)
+        
+    # def accuracy(self, y_pred, y_true):
+    #     correct_predictions = torch.eq(y_pred, y_true).sum().item()
+    #     total_predictions = y_true.numel()
+    #     return correct_predictions / total_predictions
+    
+
+    # def precision(self, y_pred, y_true):
+    #     true_positive = torch.logical_and(y_pred == 1, y_true == 1).sum().item()
+    #     predicted_positive = (y_pred == 1).sum().item()
+    #     return true_positive / predicted_positive if predicted_positive > 0 else 0
+    
+    # def recall(self, y_pred, y_true):
+    #     true_positive = torch.logical_and(y_pred == 1, y_true == 1).sum().item()
+    #     actual_positive = (y_true == 1).sum().item()
+    #     return true_positive / actual_positive if actual_positive > 0 else 0
+    
+    # def f1_score(self, y_pred, y_true):
+    #     prec = self.precision(y_pred, y_true)
+    #     rec = self.recall(y_pred, y_true)
+    #     return 2 * (prec * rec) / (prec + rec) if (prec + rec) > 0 else 0
+
 
     def validate_one_epoch(self, model: nn.Module, dataloader: DataLoader, loss_function, device, metrics: Optional[torchmetrics.MetricCollection]=None):
         model.eval()
         total_loss = 0.
+
         with torch.inference_mode():
             for X, y in dataloader:
                 X, y = X.to(device), y.to(device)
@@ -439,6 +472,7 @@ class Trainer():
                 total_loss += loss_function(y_hat, y).item() * len(y)
                 if metrics is not None:
                     metrics.update(y_hat, y)
+
         return total_loss/len(dataloader.dataset)
 
     def test_step(self, model: nn.Module, dataloader: DataLoader):
