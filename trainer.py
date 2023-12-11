@@ -23,15 +23,11 @@ class Trainer():
         self.config_dir = config_dir
         self.config_name = config_name
         
-        self.config_modules = []
-        self._load_module_from_path()
-
-        self.configs = [module.config for module in self.config_modules]
-        if config_name is not None:
-            self.configs = [config for config in self.configs if config['name'] == config_name]
+        self.configs = []
+        self._load_module_from_path(self.config_name)
 
 
-    def _load_module_from_path(self):
+    def _load_module_from_path(self, target_config_name):
         config_files = os.listdir(self.config_dir)
         for config_file in config_files:
             config_file = os.path.join(self.config_dir, config_file)
@@ -41,11 +37,21 @@ class Trainer():
                 continue
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            self.config_modules.append(module)
+
+            self.configs.append({
+                'config': module.config,
+                'features': module.numerical + module.onehot + module.label
+            })
+
+        if target_config_name is not None:
+            self.configs = [config for config in self.configs if config['config']['name'] == target_config_name]
         
 
     def train(self):
-        for config in self.configs:
+        for i, config in enumerate(self.configs):
+            config = self.configs[i]['config']
+            features = self.configs[i]['features']
+
             model = config['model']
             model_class = model['class']
             module_list = model['module_list']
@@ -56,9 +62,11 @@ class Trainer():
             if os.path.exists(cached_X_file) and os.path.exists(cached_y_file):
                 train_X_df = pd.read_csv(cached_X_file)
                 train_y_df = pd.read_csv(cached_y_file)
+                train_X_df = train_X_df[features]
             else:
                 train_X_df = pd.read_csv(data['train_X']['path'], index_col=data['train_X']['index_col'])
                 train_y_df = pd.read_csv(data['train_y']['path'], index_col=data['train_y']['index_col'])
+                train_X_df = train_X_df[features]
 
                 transform = data['transform'] if 'transform' in data else None
                 if transform is not None:
@@ -91,6 +99,9 @@ class Trainer():
             train_X = torch.tensor(train_X_df.to_numpy(dtype=np.float32))
             train_y = torch.tensor(train_y_df.to_numpy(dtype=np.float32))
             output_dir = data['output_dir']      
+
+            # 설정한 피쳐들로 사용하도록 오버라이딩
+            module_list[0] = nn.Linear(len(train_X_df.columns), module_list[0].out_features)
             
             hyperparameters = config['hyper_params']
             device = hyperparameters['device']
@@ -118,7 +129,10 @@ class Trainer():
 
 
     def validate(self):
-        for config in self.configs:
+        for i, config in enumerate(self.configs):
+            config = self.configs[i]['config']
+            features = self.configs[i]['features']
+
             config_name = config['name']
             model = config['model']
             model_class = model['class']
@@ -130,9 +144,11 @@ class Trainer():
             if os.path.exists(cached_X_file) and os.path.exists(cached_y_file):
                 train_X_df = pd.read_csv(cached_X_file)
                 train_y_df = pd.read_csv(cached_y_file)
+                train_X_df = train_X_df[features]
             else:
                 train_X_df = pd.read_csv(data['train_X']['path'], index_col=data['train_X']['index_col'])
                 train_y_df = pd.read_csv(data['train_y']['path'], index_col=data['train_y']['index_col'])
+                train_X_df = train_X_df[features]
 
                 transform = data['transform'] if 'transform' in data else None
                 if transform is not None:
@@ -162,10 +178,13 @@ class Trainer():
                 # train_X_df.to_csv(cached_X_file, index=False)
                 # train_y_df.to_csv(cached_y_file, index=False)
 
+
             train_X = torch.tensor(train_X_df.to_numpy(dtype=np.float32))
             train_y = torch.tensor(train_y_df.to_numpy(dtype=np.float32))
             output_dir = data['output_dir']
 
+            # 설정한 피쳐들로 사용하도록 오버라이딩
+            module_list[0] = nn.Linear(len(train_X_df.columns), module_list[0].out_features)
 
             hyperparameters = config['hyper_params']
             device = hyperparameters['device']
@@ -338,7 +357,8 @@ class Trainer():
     def test(self, model_path: str):
         if len(self.configs) > 1:
             raise ValueError("config name must be specified")
-        config = self.configs[0]
+        config = self.configs[0]['config']
+        features = self.configs[0]['features']
 
         model = config['model']
         model_class = model['class']
@@ -374,6 +394,9 @@ class Trainer():
                         raise ValueError("transform object must have fit_transform or fit_resample method")
         print(f"transformed test_X_df.shape: {test_X_df.shape}")
         print(f"transformed test_y_df.shape: {test_y_df.shape}")
+
+        # 설정한 피쳐들로 사용하도록 오버라이딩
+        module_list[0].in_features = len(test_X_df.columns)
 
         X = torch.Tensor(test_X_df.to_numpy(dtype=np.float32))
         y = torch.Tensor(test_y_df.to_numpy(dtype=np.float32))
