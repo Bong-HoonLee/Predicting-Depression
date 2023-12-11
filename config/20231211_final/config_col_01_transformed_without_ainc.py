@@ -12,7 +12,7 @@ from sklearn.preprocessing import OneHotEncoder
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import SMOTE
 
-numerical = ['HE_glu', 'HE_ast', 'HE_WBC', 'HE_Bplt', 'HE_dbp', 'ainc', 'HE_HDL_st2', 'HE_sbp', 'HE_wt', 'HE_HB', 'HE_chol', 'HE_RBC', 'HE_Usg', 'HE_alt', 'HE_wc', 'HE_crea', 'HE_Uph', 'HE_ht', 'HE_HCT', 'HE_BUN', 'age', 'HE_TG']
+numerical = ['HE_glu', 'HE_ast', 'HE_WBC', 'HE_Bplt', 'HE_dbp', 'HE_HDL_st2', 'HE_sbp', 'HE_wt', 'HE_HB', 'HE_chol', 'HE_RBC', 'HE_Usg', 'HE_alt', 'HE_wc', 'HE_crea', 'HE_Uph', 'HE_ht', 'HE_HCT', 'HE_BUN', 'age', 'HE_TG']
 onehot = ['npins', 'DI2_pr', 'DJ4_pr', 'HE_Ubil', 'educ', 'BH1', 'sex', 'BO1', 'marri_1', 'HE_obe', 'DI2_pt', 'live_t', 'tins', 'HE_Uro', 'DI3_pr', 'BH9_11', 'EC_stt_1', 'occp', 'HE_Unitr', 'BO1_1', 'LQ4_00', 'HE_Upro', 'DE1_pr', 'DE1_pt', 'HE_Uglu', 'BM1_4', 'BM1_6', 'HE_rPLS', 'LQ1_sb', 'D_2_1', 'BH2_61', 'HE_Uket', 'BM1_8', 'BO2_1', 'EC_stt_2', 'BM1_3', 'DJ4_pt', 'HE_Ubld', 'BM1_7', 'BS8_2', 'LQ2_ab', 'EC_occp', 'BS9_2', 'BM1_5', 'DI3_pt', 'BD1', 'BM1_1', 'DI1_pr', 'DI1_pt', 'BM1_2']
 label = ['cfam', 'BA2_13', 'BE5_1', 'BD2_1', 'DI3_2', 'edu', 'BD1_11', 'house', 'BE3_31', 'BA2_12', 'ho_incm5', 'incm', 'ho_incm', 'incm5', 'BS3_1', 'D_1_1']
 y_related = ['BP_PHQ_1', 'BP_PHQ_2', 'BP_PHQ_3', 'BP_PHQ_4', 'BP_PHQ_5', 'BP_PHQ_6', 'BP_PHQ_7', 'BP_PHQ_8', 'BP_PHQ_9', 'mh_PHQ_S', 'BP6_10', 'BP6_31', 'DF2_pr', 'DF2_pt', 'BP1']
@@ -21,7 +21,7 @@ config = {
     "model": {
         "class": ANN,
         "module_list": nn.ModuleList([
-            nn.Linear(208, 32),  #### 조정 필요
+            nn.Linear(207, 32),  #### 조정 필요
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.Linear(32, 1),
