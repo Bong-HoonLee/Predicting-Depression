@@ -56,7 +56,7 @@ class Trainer:
     def train(self):
         for i, config in enumerate(self.configs):
             config = self.configs[i]["config"]
-            features = self.configs[i]["features"]
+            # features = self.configs[i]["features"]
 
             model = config["model"]
             model_class = model["class"]
@@ -72,7 +72,7 @@ class Trainer:
             if os.path.exists(cached_X_file) and os.path.exists(cached_y_file):
                 train_X_df = pd.read_csv(cached_X_file)
                 train_y_df = pd.read_csv(cached_y_file)
-                train_X_df = train_X_df[features]
+                # train_X_df = train_X_df[features]
             else:
                 train_X_df = pd.read_csv(
                     data["train_X"]["path"], index_col=data["train_X"]["index_col"]
@@ -80,7 +80,7 @@ class Trainer:
                 train_y_df = pd.read_csv(
                     data["train_y"]["path"], index_col=data["train_y"]["index_col"]
                 )
-                train_X_df = train_X_df[features]
+                # train_X_df = train_X_df[features]
 
                 transform = data["transform"] if "transform" in data else None
                 if transform is not None:
@@ -120,17 +120,15 @@ class Trainer:
                                 )
                 print(f"transformed train_X_df.shape: {train_X_df.shape}")
                 print(f"transformed train_y_df.shape: {train_y_df.shape}")
-                # train_X_df.to_csv(cached_X_file, index=False)
-                # train_y_df.to_csv(cached_y_file, index=False)
 
             train_X = torch.tensor(train_X_df.to_numpy(dtype=np.float32))
             train_y = torch.tensor(train_y_df.to_numpy(dtype=np.float32))
             output_dir = data["output_dir"]
 
             # 설정한 피쳐들로 사용하도록 오버라이딩
-            module_list[0] = nn.Linear(
-                len(train_X_df.columns), module_list[0].out_features
-            )
+            # module_list[0] = nn.Linear(
+            #     len(train_X_df.columns), module_list[0].out_features
+            # )
 
             hyperparameters = config["hyper_params"]
             device = hyperparameters["device"]
@@ -167,7 +165,7 @@ class Trainer:
     def validate(self):
         for i, config in enumerate(self.configs):
             config = self.configs[i]["config"]
-            features = self.configs[i]["features"]
+            # features = self.configs[i]["features"]
 
             config_name = config["name"]
             model = config["model"]
@@ -184,7 +182,6 @@ class Trainer:
             if os.path.exists(cached_X_file) and os.path.exists(cached_y_file):
                 train_X_df = pd.read_csv(cached_X_file)
                 train_y_df = pd.read_csv(cached_y_file)
-                train_X_df = train_X_df[features]
             else:
                 train_X_df = pd.read_csv(
                     data["train_X"]["path"], index_col=data["train_X"]["index_col"]
@@ -192,7 +189,6 @@ class Trainer:
                 train_y_df = pd.read_csv(
                     data["train_y"]["path"], index_col=data["train_y"]["index_col"]
                 )
-                train_X_df = train_X_df[features]
 
                 transform = data["transform"] if "transform" in data else None
                 if transform is not None:
@@ -232,17 +228,16 @@ class Trainer:
                                 )
                 print(f"transformed train_X_df.shape: {train_X_df.shape}")
                 print(f"transformed train_y_df.shape: {train_y_df.shape}")
-                # train_X_df.to_csv(cached_X_file, index=False)
-                # train_y_df.to_csv(cached_y_file, index=False)
+
 
             train_X = torch.tensor(train_X_df.to_numpy(dtype=np.float32))
             train_y = torch.tensor(train_y_df.to_numpy(dtype=np.float32))
             output_dir = data["output_dir"]
 
             # 설정한 피쳐들로 사용하도록 오버라이딩
-            module_list[0] = nn.Linear(
-                len(train_X_df.columns), module_list[0].out_features
-            )
+            # module_list[0] = nn.Linear(
+            #     len(train_X_df.columns), module_list[0].out_features
+            # )
 
             hyperparameters = config["hyper_params"]
             device = hyperparameters["device"]
@@ -445,7 +440,7 @@ class Trainer:
         if len(self.configs) > 1:
             raise ValueError("config name must be specified")
         config = self.configs[0]["config"]
-        features = self.configs[0]["features"]
+        # features = self.configs[0]["features"]
 
         model = config["model"]
         model_class = model["class"]
@@ -453,6 +448,9 @@ class Trainer:
 
         data = config["data"]
 
+        train_X_df = pd.read_csv(
+            data["train_X"]["path"], index_col=data["train_X"]["index_col"]
+        )
         test_X_df = pd.read_csv(
             data["test_X"]["path"], index_col=data["test_X"]["index_col"]
         )
@@ -460,7 +458,8 @@ class Trainer:
             data["test_y"]["path"], index_col=data["test_y"]["index_col"]
         )
 
-        test_X_df = test_X_df[features]
+        # test_X_df = test_X_df[features]
+        test_X_df = test_X_df[list(set(train_X_df.columns).intersection(test_X_df.columns))]
 
         transform = data["transform"] if "transform" in data else None
         if transform is not None:
@@ -482,23 +481,30 @@ class Trainer:
                         # 원-핫 인코딩된 데이터프레임과 원래 데이터프레임 결합
                         test_X_df = pd.concat([test_X_df, onehot_encoded_df], axis=1)
                     elif hasattr(obj_instance, "fit_resample"):
-                        test_X_df, test_y_df = getattr(obj_instance, "fit_resample")(
-                            test_X_df, test_y_df
-                        )
+                        # test_X_df, test_y_df = getattr(obj_instance, "fit_resample")(
+                        #     test_X_df, test_y_df
+                        # )
+                        pass
                     elif hasattr(obj_instance, "fit_transform"):
                         targets = params["fit_transform_cols"]
                         test_X_df[targets] = getattr(obj_instance, "fit_transform")(
                             test_X_df[targets]
                         )
+                        train_X_df[targets] = getattr(obj_instance, "fit_transform")(
+                            train_X_df[targets]
+                        )
                     else:
                         raise ValueError(
                             "transform object must have fit_transform or fit_resample method"
                         )
+                    
         print(f"transformed test_X_df.shape: {test_X_df.shape}")
         print(f"transformed test_y_df.shape: {test_y_df.shape}")
 
         # 설정한 피쳐들로 사용하도록 오버라이딩
-        module_list[0].in_features = len(test_X_df.columns)
+        # module_list[0] = nn.Linear(
+        #     len(test_X_df.columns), module_list[0].out_features
+        # )
 
         X = torch.Tensor(test_X_df.to_numpy(dtype=np.float32))
         y = torch.Tensor(test_y_df.to_numpy(dtype=np.float32))
@@ -508,8 +514,8 @@ class Trainer:
 
         model: nn.Module = model_class(module_list).to(device)
         model.load_state_dict(torch.load(model_path))
-        model.eval()
 
+        model.eval()
         with torch.inference_mode():
             preds = model.forward(X)
 
@@ -538,26 +544,6 @@ class Trainer:
             optimizer.step()
 
         return total_loss / len(dataloader.dataset)
-
-    # def accuracy(self, y_pred, y_true):
-    #     correct_predictions = torch.eq(y_pred, y_true).sum().item()
-    #     total_predictions = y_true.numel()
-    #     return correct_predictions / total_predictions
-
-    # def precision(self, y_pred, y_true):
-    #     true_positive = torch.logical_and(y_pred == 1, y_true == 1).sum().item()
-    #     predicted_positive = (y_pred == 1).sum().item()
-    #     return true_positive / predicted_positive if predicted_positive > 0 else 0
-
-    # def recall(self, y_pred, y_true):
-    #     true_positive = torch.logical_and(y_pred == 1, y_true == 1).sum().item()
-    #     actual_positive = (y_true == 1).sum().item()
-    #     return true_positive / actual_positive if actual_positive > 0 else 0
-
-    # def f1_score(self, y_pred, y_true):
-    #     prec = self.precision(y_pred, y_true)
-    #     rec = self.recall(y_pred, y_true)
-    #     return 2 * (prec * rec) / (prec + rec) if (prec + rec) > 0 else 0
 
     def validate_one_epoch(
         self,

@@ -12,21 +12,17 @@ from sklearn.preprocessing import OneHotEncoder
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import SMOTE
 
-
-numerical = ['HE_chol', 'HE_HCT', 'HE_RBC', 'HE_HB', 'HE_Uph', 'HE_dbp', 'HE_crea', 'HE_Bplt', 'HE_alt', 'HE_glu', 'HE_TG', 'age', 'HE_HDL_st2', 'HE_Usg', 'HE_WBC', 'HE_ast', 'HE_BUN', 'HE_wt', 'ainc', 'HE_sbp', 'HE_ht', 'HE_wc']
-onehot = ['HE_Uglu', 'HE_Unitr', 'sex', 'educ', 'HE_obe', 'DI2_pt', 'DI3_pt', 'BH2_61', 'npins', 'BM1_3', 'marri_1', 'DI1_pt', 'BO1_1', 'HE_Upro', 'BM1_6', 'LQ1_sb', 'BM1_4', 'DJ4_pr', 'HE_Ubil', 'BM1_7', 'HE_Uket', 'BM1_1', 'BM1_2', 'LQ2_ab', 'HE_Ubld', 'BM1_5', 'DE1_pr', 'BS9_2', 'DE1_pt', 'tins', 'EC_occp', 'BD1', 'HE_rPLS', 'live_t', 'HE_Uro', 'D_2_1', 'BO1', 'LQ4_00', 'DJ4_pt', 'EC_stt_1', 'DI3_pr', 'BH1', 'occp', 'DI2_pr', 'BH9_11', 'EC_stt_2', 'BS8_2', 'BM1_8', 'BO2_1', 'DI1_pr']
-label = ['BA2_13', 'house', 'ho_incm', 'DI3_2', 'cfam', 'BE5_1', 'edu', 'BD1_11', 'incm', 'ho_incm5', 'D_1_1', 'BA2_12', 'incm5', 'BS3_1', 'BD2_1', 'BE3_31']
-
-
-y_related =["BP_PHQ_1","BP_PHQ_2","BP_PHQ_3","BP_PHQ_4","BP_PHQ_5","BP_PHQ_6","BP_PHQ_7","BP_PHQ_8","BP_PHQ_9","mh_PHQ_S","BP6_10","BP6_31","DF2_pr","DF2_pt","BP1"]
-y = "depressed"
+numerical = ['HE_glu', 'HE_ast', 'HE_WBC', 'HE_Bplt', 'HE_dbp', 'ainc', 'HE_HDL_st2', 'HE_sbp', 'HE_wt', 'HE_HB', 'HE_chol', 'HE_RBC', 'HE_Usg', 'HE_alt', 'HE_wc', 'HE_crea', 'HE_Uph', 'HE_ht', 'HE_HCT', 'HE_BUN', 'age', 'HE_TG']
+onehot = ['npins', 'DI2_pr', 'DJ4_pr', 'HE_Ubil', 'educ', 'BH1', 'sex', 'BO1', 'marri_1', 'HE_obe', 'DI2_pt', 'live_t', 'tins', 'HE_Uro', 'DI3_pr', 'BH9_11', 'EC_stt_1', 'occp', 'HE_Unitr', 'BO1_1', 'LQ4_00', 'HE_Upro', 'DE1_pr', 'DE1_pt', 'HE_Uglu', 'BM1_4', 'BM1_6', 'HE_rPLS', 'LQ1_sb', 'D_2_1', 'BH2_61', 'HE_Uket', 'BM1_8', 'BO2_1', 'EC_stt_2', 'BM1_3', 'DJ4_pt', 'HE_Ubld', 'BM1_7', 'BS8_2', 'LQ2_ab', 'EC_occp', 'BS9_2', 'BM1_5', 'DI3_pt', 'BD1', 'BM1_1', 'DI1_pr', 'DI1_pt', 'BM1_2']
+label = ['cfam', 'BA2_13', 'BE5_1', 'BD2_1', 'DI3_2', 'edu', 'BD1_11', 'house', 'BE3_31', 'BA2_12', 'ho_incm5', 'incm', 'ho_incm', 'incm5', 'BS3_1', 'D_1_1']
+y_related = ['BP_PHQ_1', 'BP_PHQ_2', 'BP_PHQ_3', 'BP_PHQ_4', 'BP_PHQ_5', 'BP_PHQ_6', 'BP_PHQ_7', 'BP_PHQ_8', 'BP_PHQ_9', 'mh_PHQ_S', 'BP6_10', 'BP6_31', 'DF2_pr', 'DF2_pt', 'BP1']
 
 config = {
-    "name": "train_X_231211",
+    "name": "train_X_231211_final_col_01",
     "model": {
         "class": ANN,
         "module_list": nn.ModuleList([
-            nn.Linear(220, 32), # 220
+            nn.Linear(220, 32),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.Linear(32, 1),
@@ -35,19 +31,19 @@ config = {
     },
     "data": {
         "train_X": {
-            "path": "data/train_X_231211.csv",
+            "path": "data/trn_X_20231211_final_col_01.csv",
             "index_col": None,
         },
         "train_y": {
-            "path": "data/train_y_231211.csv",
+            "path": "data/trn_y_20231211_final_col_01.csv",
             "index_col": None,
         },
         "test_X": {
-            "path": "data/test_X_231211.csv",
+            "path": "data/tst_X_20231211_final_col_01.csv",
             "index_col": None,
         },
         "test_y": {
-            "path": "data/test_y_231211.csv",
+            "path": "data/tst_y_20231211_final_col_01.csv",
             "index_col": None,
         },
         "transform": {
