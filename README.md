@@ -21,12 +21,17 @@
 - `requirements.txt`: required libraries and packages 
 - `trainer.py`: main train&test logics
 
-### How to Run
-1) `pip install requirements.txt` to install required packages
-2) create `/.vscode/launch.json` and copy&paste launch.json at the very end of this readme.md
-3) choose a config directory(for example, out best model is located at `/config/20231211_final/`) you want to test  (all of the config.py in the selected folder will be executed at once)
+### How to Run & Debug
+1) `pip install -r requirements.txt` to install required packages
+2) create `./.vscode/launch.json` and copy&paste launch.json at the very end of this readme.md
+3) choose a config directory(for example, out best model is located at `./config/20231211_final/`) you want to test  (all of the config.py in the selected folder will be executed at once)
 4) now, open `launch.json` to put the config directory path on `"args"`
 5) then, choose a mode (train, validate(5-fold), test) on **RUN AND DEBUG**!
+
+
+### Running Samples
+1) Please download the preprocessed sample dataset(transformed 6 csv files) from this [link](https://drive.google.com/drive/folders/1UjUa46Cx-X8-EDdWtWvQhg5gAbJgRlP3) and place it in the ./data directory.
+2) In this state, running the command `make sample-test` will sequentially perform model validation, training, and testing using the predefined sample Config File (./config/samples/20231212_transformed) and the files that were previously downloaded.
 
 ### Dataset
 - Source: Korea National Health & Nuturition Examination Survey ([link](https://knhanes.kdca.go.kr/knhanes/sub03/sub03_01.do))
@@ -63,10 +68,10 @@
 ### Models
 - Pre-processed data(.csv): [drive link](https://drive.google.com/drive/folders/1UjUa46Cx-X8-EDdWtWvQhg5gAbJgRlP3)
 	- file name of the csv is corresponded with config.py
-	- csv files should be located on `/data` 
+	- csv files should be located on `./data` 
 - Metrics: Accuracy, Precision, Recall, F1-score, Support, AUROC
 - Best Model (ANN)
-  	- config_path: `config/20231211_final/config_col_01_transformed.py`
+  	- config_path: `./config/20231211_final/config_col_01_transformed.py`
   	- run settings: `./bin/train --mode=validate --config-dir=config/20231211_final`
   	- config settings
   	  	1) Model=ANN
@@ -105,7 +110,7 @@
 ### Logical Flow
 
 
-![pytorch-learning-logical-flow](doc/pytorch_learning_logical_flow.png)
+![pytorch-learning-logical-flow](./doc/pytorch_learning_logical_flow.png)
 
 ### Pseudo Code
 ```
@@ -190,19 +195,17 @@
 
 ## Pytorch 모델 추론 과정
 
-![pytorch-inference-logical-flow](doc/pytorch_inference_logical_flow.png)
+![pytorch-inference-logical-flow](./doc/pytorch_inference_logical_flow.png)
 
 -------
 
 ## 프로그램 도식
 
-![team4_project_01_flow](doc/team4_project_01_flow.png)
+![team4_project_01_flow](./doc/team4_project_01_flow.png)
 
 --------
 
 ## Runner Sample(launch.json)
-[prerequisite]
-pip install -r requirements.txt
 ```
 {
     "version": "0.2.0",
@@ -249,8 +252,8 @@ pip install -r requirements.txt
             "args": [
                 "--mode=test",
                 "--config-dir=config/20231211_final",
-                "--config-name=train_X_231211_final_col_01_transformed",
-                "--model-path=output/train_X_231211_final_col_01_transformed_202312120307.pth",
+                "--target-config-name=train_X_231211_final_col_01_transformed",
+                "--target-model-path=output/train_X_231211_final_col_01_transformed_202312120307.pth",
             ]
         }
     ]

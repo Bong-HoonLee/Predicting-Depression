@@ -55,7 +55,7 @@ class Trainer:
                 if config["config"]["name"] == target_config_name
             ]
 
-    def train(self):
+    def train(self, output_model_name: str = None):
         for i, config in enumerate(self.configs):
             config = self.configs[i]["config"]
             # features = self.configs[i]["features"]
@@ -156,7 +156,7 @@ class Trainer:
 
             file_name = (
                 config["name"] + "_" + datetime.now().strftime("%Y%m%d%H%M") + ".pth"
-            )
+            ) if output_model_name is None else output_model_name
             torch.save(model.state_dict(), f"{output_dir}/{file_name}")
 
     def validate(self):
@@ -533,6 +533,7 @@ class Trainer:
         df_rank = df.sort_values(by=['val_loss_mean'], inplace=False)
         df_rank.head(10)
 
+        #TODO
         pass
 
 
