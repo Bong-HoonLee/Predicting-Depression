@@ -54,28 +54,25 @@ if __name__ == "__main__":
     
     # model
     model = cfg.get('model')
-    
     # randomized search setting
     model_params = cfg.get('model_params')
     random_params = cfg.get('random_params')
     n_iter = random_params.get('n_iter')
     cv = random_params.get('cv')
     scoring = random_params.get('scoring')
-    
     # randomized search
     bestParameter = rs(X, y, model, model_params, n_iter, cv, scoring)
-    
+    print(bestParameter)
     # model prams
     max_depth = bestParameter['max_depth']
     min_samples_leaf = bestParameter['min_samples_leaf']
     min_samples_split = bestParameter['min_samples_split']
     n_estimators = bestParameter['n_estimators']
-
     # cv setting
     cvld_params = cfg.get('cvld_params')
     scoring = cvld_params.get('scoring')
-    cvld_params.get('cv')
-
+    cv = cvld_params.get('cv')
+    print(cv)
     # cv
     cv_scores = cvld(X, y, model, n_estimators, max_depth, min_samples_leaf, min_samples_split, scoring, cv)
     print(cv_scores)
