@@ -1,4 +1,75 @@
+## Predicting Depression Using Neural Network and ML Models
+- Purpose of the project
+	- In a society where there are still psychological and social hurdles to seeking counselling for depression diagnosis, the aim is to predict the risk of depression based on lifestyle habits or regular health checkup results, and subsequently provide guidance on treatment or diagnosis to help the patient. Additionally, identifying factors which might significantly influence depression diagnosis can be helpful to assist in treatment and symptom improvement.
+- Research Questions
+  1) To predict depression using daily life questionnaires and basic health screening results (Binary Classification)
+  2) To find significant features regarding the prediction of depression (Feature Importances)
 
+### Team
+- 
+
+### Directory
+- `archive`: EDA, data pre-processing
+- `bin`
+- `config`: 
+- `doc`
+- `models`: ANN models
+- `rf_clf`: Random Forest models
+- `requirements.txt`: required libraries and packages 
+- `trainer.py`: main train&test logics
+
+### Dataset
+- Source: Korea National Health & Nuturition Examination Survey ([link](https://knhanes.kdca.go.kr/knhanes/sub03/sub03_01.do))
+	- Only respondents aged over 19 are selected 
+	- Respondents are chosen from the population with 0.0002 extraction rate
+- Train & Test Set
+	- Train Set: survey of 2007 ~ 2019, and 2021 
+	- Test Set: survey of 2020
+- Features (independent variables, X)
+	- 125 features are selected from over 800 features 
+		- including the results of multiple blood tests, urine tests to intensity of daily workouts, education level, and even whether to brush their teeth.
+	- Tried to use as many as possible features but,
+		1) features with a high proportion of NaN values are discarded. 
+		2) features which can be representative of similar questions
+		3) commonly used features among 2007 ~ 2021, selected year.
+- Target (dependent variable, y)
+	- `depressed` variables have been defined. `depressed` == 1 if:
+		1) `mh_PHQ_S` >= 10 or # `mh_PHQ_S`: total score of PHQ self test
+		2) `BP_PHQ_9`.isin([1, 2, 3]) or # `BP_PHQ_9`: 9th question of PHQ self-test, "Have you ever thought about suicide or hurting yourself this year?"
+		3) `BP6_10` == 1 or  # `BP6_10`: "Have you ever thought about suicide this year?"
+		4) `BP6_31` == 1 or # `BP6_31`: "Have you ever thought about hurting yourself this year?"
+		5) `DF2_pr` == 1 & `mh_PHQ_S`== NaN # `DF2_pr==1`: currently experiencing depression and have been diagnosed by a doctor
+	- A respondent with no information on depression-related variables has been removed rather than filling in missing values.
+	- Reference of definition of depression: National Health Insurance ([link](https://www.nhis.or.kr/static/alim/paper/oldpaper/202001/sub/s01_02.html))
+
+### Preprocessing
+- Manual Processing
+	- Data Loading, Train/Test Separation, Feature Selection and Grouping, Define Target Label, Drop NaNs -> output to csv
+- In Pipeline
+	- Fill NaNs (KNN, most frequent values), Encoding/Scaling, Under/Over-sampling
+>excalidraw 사진 넣기
+
+### Models
+- Pre-processed data (.csv): [drive link](https://drive.google.com/drive/folders/1UjUa46Cx-X8-EDdWtWvQhg5gAbJgRlP3)
+	- file name of the csv is corresponded with config.py
+- Metrics: Accuracy, Precision, Recall, F1-score, Support, AUROC
+- Best Model
+- Comparison: Logistic Regression, Random Forest, ANN
+
+### Feature Importances
+- Top 5 features based on random forest - feature importances
+	- `D_1_1`: Subjective health awareness
+	- `ainc`: Monthly average household total income
+	- `LQ4_00_1.0`: Presence of (physical) activity limitation (Yes)
+	- `edu`: Educational level - Academic background
+	- `D_2_1_1.0`: Recent experience of physical discomfort in the past 2 weeks (Yes)
+- Excluding any of the above features didn't show a significant change in metrics with Random Forest Model.
+- Extra work is needed with the Neural Network Model to identify significant features.
+
+> 그래프 넣기
+
+
+--------------------------------------------------------------------------
 ## Pytorch 모델 학습 과정
 ### Logical Flow
 
@@ -99,7 +170,8 @@
 --------
 
 ## Runner Sample(launch.json)
-
+[prerequisite]
+pip install -r requirements.txt
 ```
 {
     "version": "0.2.0",
