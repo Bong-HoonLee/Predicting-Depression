@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torchmetrics
 import matplotlib.pyplot as plt
-
+import seaborn as sns
 
 from sklearn.model_selection import StratifiedKFold
 from collections import defaultdict
@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from typing import Optional
 from sklearn.preprocessing import OneHotEncoder
-from torchmetrics.classification import BinaryAccuracy
+from torchmetrics.classification import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinaryAUROC
 
 
 class Trainer:
@@ -92,8 +92,6 @@ class Trainer:
                             obj_instance = transform_obj(**params["params"])
                             if obj_instance.__class__ == OneHotEncoder:
                                 targets = params["fit_transform_cols"]
-
-                                ##### train
                                 # 원-핫 인코딩 적용할 컬럼 선택
                                 onehot_encoded = obj_instance.fit_transform(
                                     train_X_df[targets]
@@ -109,24 +107,6 @@ class Trainer:
                                 train_X_df = pd.concat(
                                     [train_X_df, onehot_encoded_df], axis=1
                                 )
-
-                                ##### test
-                                # 원-핫 인코딩 적용할 컬럼 선택
-                                # set(test_X_df.columns).intersection(set(targets))
-                                # onehot_encoded = obj_instance.transform(
-                                #     test_X_df[targets]
-                                # )
-                                # # 원-핫 인코딩된 데이터프레임 생성
-                                # onehot_encoded_df = pd.DataFrame(
-                                #     onehot_encoded,
-                                #     columns=obj_instance.get_feature_names_out(targets),
-                                # )
-                                # # 원래 데이터프레임에서 인코딩 대상 컬럼 제거
-                                # test_X_df = test_X_df.drop(targets, axis=1)
-                                # # 원-핫 인코딩된 데이터프레임과 원래 데이터프레임 결합
-                                # test_X_df = pd.concat(
-                                #     [test_X_df, onehot_encoded_df], axis=1
-                                # )
                             elif hasattr(obj_instance, "fit_resample"):
                                 train_X_df, train_y_df = getattr(
                                     obj_instance, "fit_resample"
@@ -143,22 +123,9 @@ class Trainer:
                 print(f"transformed train_X_df.shape: {train_X_df.shape}")
                 print(f"transformed train_y_df.shape: {train_y_df.shape}")
 
-
-            #####TODO 테스트셋 적용시 onehot 으로 인해 col 정보가 달라지는 이슈가 있어서 이곳에서 오버라이딩 임시 처리
-            # features = list(set(test_X_df.columns).intersection(set(train_X_df.columns)))
-            # train_X_df = train_X_df[features]
-
-            # diff_cols = list(set(test_X_df.columns).difference(set(train_X_df.columns)))
-            # print(f"cols diffence between train and test: {diff_cols}")
-
             train_X = torch.tensor(train_X_df.to_numpy(dtype=np.float32))
             train_y = torch.tensor(train_y_df.to_numpy(dtype=np.float32))
             output_dir = data["output_dir"]
-
-            # 설정한 피쳐들로 사용하도록 오버라이딩
-            # module_list[0] = nn.Linear(
-            #     len(train_X_df.columns), module_list[0].out_features
-            # )
 
             hyperparameters = config["hyper_params"]
             device = hyperparameters["device"]
@@ -263,11 +230,6 @@ class Trainer:
             train_X = torch.tensor(train_X_df.to_numpy(dtype=np.float32))
             train_y = torch.tensor(train_y_df.to_numpy(dtype=np.float32))
             output_dir = data["output_dir"]
-
-            # 설정한 피쳐들로 사용하도록 오버라이딩
-            # module_list[0] = nn.Linear(
-            #     len(train_X_df.columns), module_list[0].out_features
-            # )
 
             hyperparameters = config["hyper_params"]
             device = hyperparameters["device"]
@@ -485,49 +447,6 @@ class Trainer:
             data["test_y"]["path"], index_col=data["test_y"]["index_col"]
         )
 
-        # # test_X_df = test_X_df[features]
-        # transform = data["transform"] if "transform" in data else None
-        # if transform is not None:
-        #     transform_steps = transform["steps"]
-        #     for step in transform_steps:
-        #         for transform_obj, params in step.items():
-        #             obj_instance = transform_obj(**params["params"])
-        #             if obj_instance.__class__ == OneHotEncoder:
-        #                 targets = params["fit_transform_cols"]
-        #                 # 원-핫 인코딩 적용할 컬럼 선택
-        #                 onehot_encoded = obj_instance.fit_transform(test_X_df[targets])
-        #                 # 원-핫 인코딩된 데이터프레임 생성
-        #                 onehot_encoded_df = pd.DataFrame(
-        #                     onehot_encoded,
-        #                     columns=obj_instance.get_feature_names_out(targets),
-        #                 )
-        #                 # 원래 데이터프레임에서 인코딩 대상 컬럼 제거
-        #                 test_X_df = test_X_df.drop(targets, axis=1)
-        #                 # 원-핫 인코딩된 데이터프레임과 원래 데이터프레임 결합
-        #                 test_X_df = pd.concat([test_X_df, onehot_encoded_df], axis=1)
-        #             elif hasattr(obj_instance, "fit_resample"):
-        #                 # test_X_df, test_y_df = getattr(obj_instance, "fit_resample")(
-        #                 #     test_X_df, test_y_df
-        #                 # )
-        #                 pass
-        #             elif hasattr(obj_instance, "fit_transform"):
-        #                 targets = params["fit_transform_cols"]
-        #                 test_X_df[targets] = getattr(obj_instance, "fit_transform")(
-        #                     test_X_df[targets]
-        #                 )
-        #             else:
-        #                 raise ValueError(
-        #                     "transform object must have fit_transform or fit_resample method"
-        #                 )
-                    
-        # print(f"transformed test_X_df.shape: {test_X_df.shape}")
-        # print(f"transformed test_y_df.shape: {test_y_df.shape}")
-
-        # 설정한 피쳐들로 사용하도록 오버라이딩
-        # module_list[0] = nn.Linear(
-        #     len(test_X_df.columns), module_list[0].out_features
-        # )
-
         X = torch.Tensor(test_X_df.to_numpy(dtype=np.float32))
         y = torch.Tensor(test_y_df.to_numpy(dtype=np.float32))
 
@@ -542,7 +461,28 @@ class Trainer:
             preds = model.forward(X)
             metric = BinaryAccuracy(threshold=0.5)
             accuracy = metric(preds, y).item()
-            print(f"Accuracy: {accuracy:.4f}")
+            # print(f"Accuracy: {accuracy:.4f}")
+
+            metric = BinaryPrecision(threshold=0.5)
+            precision = metric(preds, y).item()
+
+            metric = BinaryRecall(threshold=0.5)
+            recall = metric(preds, y).item()
+
+            metric = BinaryF1Score(threshold=0.5)
+            f1 = metric(preds, y).item()
+
+            metric = BinaryAUROC()
+            auroc = metric(preds, y).item()
+
+            df_metrics = pd.DataFrame([accuracy, precision, recall, f1, auroc], index=['Accuracy', 'Precision', 'Recall', 'F1', 'AUROC'])
+            
+            plt.figure(figsize=(8, 6))
+            sns.heatmap(df_metrics, annot=True, fmt=".2f", cmap="Blues")
+            plt.title("Model Performance")
+            plt.tight_layout()
+            plt.show()
+
 
     def train_one_epoch(
         self,
@@ -587,5 +527,12 @@ class Trainer:
 
         return total_loss / len(dataloader.dataset)
 
-    def test_step(self, model: nn.Module, dataloader: DataLoader):
+    def summary(self, target_config_name: str):
+
+        df = pd.read_csv('./HN_X_231206_summary.csv')
+        df_rank = df.sort_values(by=['val_loss_mean'], inplace=False)
+        df_rank.head(10)
+
         pass
+
+

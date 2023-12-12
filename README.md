@@ -98,16 +98,10 @@
 
 --------
 
-## launch.json 
+## Runner Sample(launch.json)
 
-1. 프로젝트 최상위 디렉토리에서 .vscode 폴더 생성
-2. .vscode 폴더 안에 launch.json 파일 생성
-3. 샘플 코드 붙여넣기
 ```
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
@@ -127,7 +121,7 @@
             "justMyCode": true,
             "args": [
                 "--mode=train",
-                "--config-dir=config/20231204",
+                "--config-dir=config/20231211_final",
             ]
         },
         {
@@ -139,33 +133,23 @@
             "justMyCode": true,
             "args": [
                 "--mode=validate",
-                "--config-dir=config/20231204",
+                "--config-dir=config/20231211_final",
             ]
         },
         {
-            "name": "Python: challenge train",
+            "name": "Python: test",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}${pathSeparator}bin${pathSeparator}train",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--mode=train",
-                "--config-dir=config/20231206",
+                "--mode=test",
+                "--config-dir=config/20231211_final",
+                "--config-name=train_X_231211_final_col_01_transformed",
+                "--model-path=output/train_X_231211_final_col_01_transformed_202312120307.pth",
             ]
-        },
-        {
-            "name": "Python: challenge validate",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}${pathSeparator}bin${pathSeparator}train",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "args": [
-                "--mode=validate",
-                "--config-dir=config/20231206",
-            ]
-        },
+        }
     ]
 }
 ```

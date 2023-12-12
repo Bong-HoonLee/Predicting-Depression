@@ -1,4 +1,3 @@
-# 빌트인, 써트파트 import
 import os
 import sys
 import torch
@@ -6,8 +5,6 @@ import torch.nn.functional as F
 import pandas as pd
 import numpy as np
 
-import torch.nn as nn
-import torchmetrics
 import matplotlib.pyplot as plt
 
 from sklearn.model_selection import StratifiedKFold

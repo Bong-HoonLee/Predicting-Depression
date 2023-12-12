@@ -45,6 +45,14 @@ config = {
             "path": "data/tst_y_20231211_final_col_01_transformed_undersampling.csv",
             "index_col": None,
         },
+        # "test_X": {
+        #     "path": "data/tst_X_20231211_final_col_01_transformed.csv",
+        #     "index_col": None,
+        # },
+        # "test_y": {
+        #     "path": "data/tst_y_20231211_final_col_01_transformed.csv",
+        #     "index_col": None,
+        # },
         "transform": {
             "steps": [
                 

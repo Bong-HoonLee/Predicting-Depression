@@ -18,19 +18,19 @@ for item in dir_list:
         continue
     sys.path.append(path)
 
-if not os.path.exists('src_path/data/transformed'):
-    os.makedirs('src_path/data/transformed')
-if not os.path.exists('src_path/output/validation'):
-    os.makedirs('src_path/output/validation')
+if not os.path.exists('data/transformed'):
+    os.makedirs('data/transformed')
+if not os.path.exists('output/validation'):
+    os.makedirs('output/validation')
 
 # args 파싱
 parser = argparse.ArgumentParser(description="I am trainer!! ha-ha-ha", add_help=True)
 parser.add_argument("--user", default="estsoft", type=str, help="home user name")
-parser.add_argument("--mode", default="train", type=str, help="train or test")
+parser.add_argument("--mode", default="train", type=str, help="subcommand - trainers' mode", choices=["train", "validate", "test", "generate_sample", "summary"])
 parser.add_argument("--data-dir", default="data", type=str, help="data directory path")
 parser.add_argument("--config-dir", default="config/20231204", type=str, help="config directory path")
-parser.add_argument("--model-path", default="models/HN_X_231206_202312061515.pth", type=str, help="model path")
-parser.add_argument("--config-name", default=None, type=str, help="model path")
+parser.add_argument("--model-path", default="models/HN_X_231206_202312061515.pth", type=str, help="target model path")
+parser.add_argument("--config-name", default=None, type=str, help="target config name")
 args = parser.parse_args()
 
 try:
@@ -52,8 +52,10 @@ try:
         trainer.test(args.model_path)
     elif args.mode == "generate_sample":
         trainer.generate_sample()
+    elif args.mode =='summary':
+        trainer.summary(target_config_name=args.config_name)
     else:
-        raise ValueError("mode must be train or test")
+        raise ValueError("mode must be defined")
 except Exception as e:
     print(e)
     raise e
