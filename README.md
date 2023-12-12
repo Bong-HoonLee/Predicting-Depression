@@ -13,15 +13,20 @@
 
 ### Directory
 - `archive`: EDA, data pre-processing
-- `bin`
-- `config`: 
-- `doc`
+- `bin`: executable file(train) is located 
+- `config`: setting files for model parameters
+- `doc`: documents, images, reports
 - `models`: ANN models
 - `rf_clf`: Random Forest models
 - `requirements.txt`: required libraries and packages 
 - `trainer.py`: main train&test logics
 
 ### How to Run
+1) `pip install requirements.txt` to install required packages
+2) create `/.vscode/launch.json` and copy&paste launch.json at the very end of this readme.md
+3) choose a config directory(for example, out best model is located at `/config/20231211_final/`) you want to test  (all of the config.py in the selected folder will be executed at once)
+4) now, open `launch.json` to put the config directory path on `"args"`
+5) then, choose a mode (train, validate(5-fold), test) on **RUN AND DEBUG**!
 
 ### Dataset
 - Source: Korea National Health & Nuturition Examination Survey ([link](https://knhanes.kdca.go.kr/knhanes/sub03/sub03_01.do))
