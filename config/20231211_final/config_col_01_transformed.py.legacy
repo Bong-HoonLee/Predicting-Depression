@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torchmetrics
 
-from torchmetrics.classification import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinaryAUROC
+from torchmetrics.classification import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinaryAUROC, BinaryConfusionMatrix
 from models.ann import ANN
 
 from sklearn.impute import KNNImputer
@@ -22,7 +22,7 @@ config = {
     "model": {
         "class": ANN,
         "module_list": nn.ModuleList([
-            nn.Linear(208, 32),
+            nn.Linear(220, 32),
             nn.ReLU(),
             nn.Linear(32, 1),
             nn.Sigmoid()
@@ -68,6 +68,7 @@ config = {
             'recall': BinaryRecall(),
             'f1score': BinaryF1Score(),
             'auroc': BinaryAUROC(),
+            'bcm':BinaryConfusionMatrix(),
         }),
         "device": "cuda"
         if torch.cuda.is_available()

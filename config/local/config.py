@@ -14,120 +14,60 @@ from imblearn.over_sampling import SMOTE, ADASYN
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 #eda01 (from archive/corr_heatmap_test.ipynb)
-numerical = ['HE_chol', 'HE_Bplt', 'HE_wt', 'HE_ht', 'HE_RBC', 'HE_HDL_st2', 'HE_HB', 'age', 'HE_Uph', 'HE_crea', 'HE_Usg', 'HE_WBC', 'HE_TG', 'HE_alt', 'HE_ast',
- 'HE_HCT', 'HE_dbp', 'HE_glu', 'HE_BUN', 'ainc', 'HE_sbp', 'HE_wc']
-onehot = ['BO2_1', 'educ', 'BH1', 'EC_stt_2', 'sex', 'HE_Unitr', 'LQ4_00', 'DI1_pt', 'BM1_5', 'DE1_pt', 'DJ4_pt', 'HE_Ubld', 'LQ1_sb', 'BM1_8', 'occp', 'DI2_pr',
- 'BD1', 'marri_1', 'DI3_pr', 'BM1_3', 'EC_occp', 'BM1_4', 'live_t', 'HE_Ubil', 'BH2_61', 'DI1_pr', 'EC_stt_1', 'BM1_7', 'DJ4_pr', 'DE1_pr', 'HE_Uglu',
- 'HE_Uro', 'HE_Upro', 'HE_Uket', 'HE_obe', 'HE_rPLS', 'BO1_1', 'BO1', 'D_2_1', 'BM1_1', 'npins', 'LQ2_ab', 'BH9_11', 'tins', 'DI2_pt', 'BM1_2',
- 'DI3_pt', 'BS8_2', 'BS9_2', 'BM1_6']
-label = ['BD1_11', 'incm', 'ho_incm', 'incm5', 'ho_incm5', 'D_1_1', 'cfam', 'BA2_13', 'BS3_1', 'DI3_2', 'house', 'BA2_12', 'BE3_31', 'edu', 'BD2_1', 'BE5_1']
-y_related =["BP_PHQ_1","BP_PHQ_2","BP_PHQ_3","BP_PHQ_4","BP_PHQ_5","BP_PHQ_6","BP_PHQ_7","BP_PHQ_8","BP_PHQ_9","mh_PHQ_S","BP6_10","BP6_31","DF2_pr","DF2_pt","BP1"]
-y = "depressed"
+numerical = ['HE_glu', 'HE_ast', 'HE_WBC', 'HE_Bplt', 'HE_dbp', 'ainc', 'HE_HDL_st2', 'HE_sbp', 'HE_wt', 'HE_HB', 'HE_chol', 'HE_RBC', 'HE_Usg', 'HE_alt', 'HE_wc', 'HE_crea', 'HE_Uph', 'HE_ht', 'HE_HCT', 'HE_BUN', 'age', 'HE_TG']
+onehot = ['npins', 'DI2_pr', 'DJ4_pr', 'HE_Ubil', 'educ', 'BH1', 'sex', 'BO1', 'marri_1', 'HE_obe', 'DI2_pt', 'live_t', 'tins', 'HE_Uro', 'DI3_pr', 'BH9_11', 'EC_stt_1', 'occp', 'HE_Unitr', 'BO1_1', 'LQ4_00', 'HE_Upro', 'DE1_pr', 'DE1_pt', 'HE_Uglu', 'BM1_4', 'BM1_6', 'HE_rPLS', 'LQ1_sb', 'D_2_1', 'BH2_61', 'HE_Uket', 'BM1_8', 'BO2_1', 'EC_stt_2', 'BM1_3', 'DJ4_pt', 'HE_Ubld', 'BM1_7', 'BS8_2', 'LQ2_ab', 'EC_occp', 'BS9_2', 'BM1_5', 'DI3_pt', 'BD1', 'BM1_1', 'DI1_pr', 'DI1_pt', 'BM1_2']
+label = ['cfam', 'BA2_13', 'BE5_1', 'BD2_1', 'DI3_2', 'edu', 'BD1_11', 'house', 'BE3_31', 'BA2_12', 'ho_incm5', 'incm', 'ho_incm', 'incm5', 'BS3_1', 'D_1_1']
+y_related = ['BP_PHQ_1', 'BP_PHQ_2', 'BP_PHQ_3', 'BP_PHQ_4', 'BP_PHQ_5', 'BP_PHQ_6', 'BP_PHQ_7', 'BP_PHQ_8', 'BP_PHQ_9', 'mh_PHQ_S', 'BP6_10', 'BP6_31', 'DF2_pr', 'DF2_pt', 'BP1']
 
 config = {
-    "name": "train_X_231211",
+    "name": "new_03",
     "model": {
         "class": ANN,
         "module_list": nn.ModuleList([
-            nn.Linear(220, 256),
-            nn.BatchNorm1d(256),
+            # 1
+            nn.Linear(208, 2),
+            nn.BatchNorm1d(2),
             nn.ReLU(),
             nn.Dropout(0),
-            nn.Linear(256, 1),
-            nn.Sigmoid()
+
+            # 2
+            nn.Linear(2, 1)
         ]),
     },
     "data": {
         "train_X": {
-            "path": "localdata/train_X_231211.csv",
+            "path": "localdata/trn_X_20231211_final_col_01_transformed.csv",
             "index_col": None,
         },
         "train_y": {
-            "path": "localdata/train_y_231211.csv",
+            "path": "localdata/trn_y_20231211_final_col_01_transformed.csv",
             "index_col": None,
         },
         "test_X": {
-            "path": "localdata/test_X_231211.csv",
+            "path": "localdata/tst_X_20231211_final_col_01_transformed_undersampling.csv",
             "index_col": None,
         },
         "test_y": {
-            "path": "localdata/test_y_231211.csv",
+            "path": "localdata/tst_y_20231211_final_col_01_transformed_undersampling.csv",
             "index_col": None,
         },
         "transform": {
             "steps": [
-                {
-                    KNNImputer: {
-                        "params": {
-                            "n_neighbors": 5,
-                            "weights": "uniform",
-                            "missing_values": float("nan"),
-                        },
-                        "fit_transform_cols": numerical
-                    }
-                },
-                {
-                    SimpleImputer: {
-                        "params": {
-                            "missing_values": float("nan"),
-                            "strategy": "most_frequent",
-                        },
-                        "fit_transform_cols": onehot
-                    }
-                },
-                {
-                    SimpleImputer: {
-                        "params": {
-                            "strategy": "most_frequent",
-                        },
-                        "fit_transform_cols": label
-                    }
-                },
-                {
-                    MinMaxScaler: {
-                        "params": {
-                            "feature_range": (0, 1),
-                        },
-                        "fit_transform_cols": numerical
-                    }
-                },
-                {
-                    OneHotEncoder: {
-                        "params": {
-                            "sparse": False,
-                        },
-                        "fit_transform_cols": onehot
-                    }
-                },
-                {
-                    RandomUnderSampler: {
-                        "params": {
-                            "sampling_strategy": 1,
-                            "random_state": 42,
-                        },
-                    }
-                },
-                {
-                    ADASYN: {
-                        "params": {
-                            "random_state": 42,
-                        },
-                    }
-                }
+                
             ],
         },
         "output_dir": "output/",
     },
     "hyper_params": {
         "data_loader_params": {
-            "batch_size": 64,
+            "batch_size": 128,
             "shuffle": True,
         },
-        "loss": nn.BCELoss(),
+        "loss": nn.BCEWithLogitsLoss(),
         "optim": torch.optim.AdamW,
         "optim_params": {
-            "lr": 0.0001,
-            'weight_decay': 0,
+            "lr": 0.001,
+            'weight_decay': 0 #1e-2,
         },
         "metrics": torchmetrics.MetricCollection({
             'accuracy': BinaryAccuracy(),
@@ -139,7 +79,7 @@ config = {
         "device": "cpu"
         if torch.cuda.is_available()
         else "cpu",
-        "epochs": 100,
+        "epochs": 50,
         'cv_params':{
             'n_split': 5,
         },
