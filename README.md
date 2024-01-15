@@ -6,11 +6,10 @@
   2) To find significant features regarding the prediction of depression (Feature Importances)
 
 ### Team
-- [BONGHOON LEE](https://github.com/Bong-HoonLee)
-- [SEOBIN BANG](https://github.com/vin10ah)
-- [DOYEON KIM](https://github.com/electronicguy97)
-- [JAESEOK LEE](https://github.com/appleman153)
-- [MOONSUN JUNG](https://github.com/JUNGMOONSUN/)
+- [chirichidi](https://github.com/chirichidi)
+- [Bong-HoonLee](https://github.com/Bong-HoonLee)
+- [angie0bb](https://github.com/angie0bb)
+- [hantoro123](https://github.com/hantoro123)
 
 
 ### Directory
