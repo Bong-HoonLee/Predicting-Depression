@@ -6,7 +6,7 @@
   2) To find significant features regarding the prediction of depression (Feature Importances)
 
 ### Team
-- [chirichidi](https://github.com/chirichidi)
+- [electronicguy97](https://github.com/electronicguy97))
 - [Bong-HoonLee](https://github.com/Bong-HoonLee)
 - [angie0bb](https://github.com/angie0bb)
 - [hantoro123](https://github.com/hantoro123)
