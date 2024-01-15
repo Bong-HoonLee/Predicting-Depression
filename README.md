@@ -7,9 +7,9 @@
 
 ### Team
 - [BONGHOON LEE](https://github.com/Bong-HoonLee)
-- [SEOBIN BANG]((https://github.com/vin10ah))
+- [SEOBIN BANG](https://github.com/vin10ah)
 - [DOYEON KIM](https://github.com/electronicguy97)
-- [JAESEOK LEE]((https://github.com/appleman153))
+- [JAESEOK LEE](https://github.com/appleman153)
 - [MOONSUN JUNG](https://github.com/JUNGMOONSUN/)
 
 
